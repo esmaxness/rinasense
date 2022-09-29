@@ -336,7 +336,7 @@ BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portI
 		switch (xPduType)
 		{
 		case PDU_TYPE_MGMT:
-			ESP_LOGE(TAG_RMT, "Mgmt PDU!!!");
+			ESP_LOGD(TAG_RMT, "Mgmt PDU!!!");
 			return xRmtProcessMgmtPdu(pxData, xFrom, pxDu);
 
 		case PDU_TYPE_CACK:
@@ -582,7 +582,9 @@ pci_t *vCastPointerTo_pci_t(void *pvArgument)
 rmt_t *pxRmtCreate(struct efcpContainer_t *pxEfcpc)
 {
 	rmt_t *pxRmtTmp;
-	rmtN1Port_t *pxPortN1[2];
+	rmtN1Port_t *pxPortN1;
+
+	pxPortN1 = pvPortMalloc(sizeof(*pxPortN1));
 
 	if (!pxEfcpc)
 	{

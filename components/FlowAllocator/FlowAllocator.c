@@ -345,8 +345,8 @@ BaseType_t xFlowAllocatorHandleCreateR(serObjectValue_t *pxSerObjValue, int resu
         return pdFALSE;
     }
 
-    if (!xNormalConnectionUpdate(pxFlow->xDestinationPortId, pxFlow->pxConnectionId->xSource,
-                                 pxFlow->pxConnectionId->xDestination))
+    if (!xNormalConnectionUpdate(pxFlow->xDestinationPortId, pxFlow->pxConnectionId->xDestination,
+                                 pxFlow->pxConnectionId->xSource))
     {
         ESP_LOGE(TAG_FA, "It was not possible to update the connection");
         return pdFALSE;

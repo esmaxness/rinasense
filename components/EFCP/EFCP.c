@@ -502,14 +502,14 @@ BaseType_t xEfcpConnectionUpdate(struct efcpContainer_t *pxContainer,
         }
         pxEfcp->pxConnection->xDestinationCepId = to;
 
-        ESP_LOGD(TAG_EFCP, "Connection updated");
-        ESP_LOGD(TAG_EFCP, "  Source address:     %d",
+        ESP_LOGE(TAG_EFCP, "Connection updated");
+        ESP_LOGE(TAG_EFCP, "  Source address:     %d",
                  pxEfcp->pxConnection->xSourceAddress);
-        ESP_LOGD(TAG_EFCP, "  Destination address %d",
+        ESP_LOGE(TAG_EFCP, "  Destination address %d",
                  pxEfcp->pxConnection->xDestinationAddress);
-        ESP_LOGD(TAG_EFCP, "  Destination cep id: %d",
+        ESP_LOGE(TAG_EFCP, "  Destination cep id: %d",
                  pxEfcp->pxConnection->xDestinationCepId);
-        ESP_LOGD(TAG_EFCP, "  Source cep id:      %d",
+        ESP_LOGE(TAG_EFCP, "  Source cep id:      %d",
                  pxEfcp->pxConnection->xSourceCepId);
 
         return pdTRUE;
@@ -837,6 +837,7 @@ struct efcp_t *pxEfcpImapFind(cepId_t xCepIdKey)
         for (x = 0; x < EFCP_IMAP_ENTRIES; x++) // lookup in the MAP for the EFCP Instance based on cepIdKey
         {
 
+                ESP_LOGD(TAG_EFCP, "Looking up %d and founded %d", xCepIdKey, xEfcpImapTable[x].xCepIdKey);
                 if (xEfcpImapTable[x].xCepIdKey == xCepIdKey)
                 {
                         xEfcpFounded = xEfcpImapTable[x].xEfcpValue;

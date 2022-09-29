@@ -747,7 +747,7 @@ BaseType_t xNormalIsFlowAllocated(portId_t xPortId)
         pxFlow = prvNormalFindFlow(pxIpcpData, xPortId);
         if (!pxFlow)
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "Flow not found");
+                ESP_LOGE(TAG_IPCPNORMAL, "Flow status: not allocated");
                 return pdFALSE;
         }
         if (pxFlow->eState == ePORT_STATE_ALLOCATED)
@@ -793,6 +793,11 @@ BaseType_t xNormalConnectionUpdate(portId_t xAppPortId, cepId_t xSrcCepId, cepId
         struct normalFlow_t *pxFlow = NULL;
 
         pxEfcpContainer = pxIPCPGetEfcpc;
+
+        if (!pxEfcpContainer)
+        {
+                ESP_LOGE(TAG_IPCPNORMAL, "EFCP Container was not founded");
+        }
 
         if (!xEfcpConnectionUpdate(pxEfcpContainer,
                                    xSrcCepId,

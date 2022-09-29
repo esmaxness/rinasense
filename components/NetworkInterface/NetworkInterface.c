@@ -316,7 +316,7 @@ esp_err_t xNetworkInterfaceInput(void *buffer, uint16_t len, void *eb)
 
 		if (xSendEventStructToIPCPTask(&xRxEvent, xDescriptorWaitTime) == pdFAIL)
 		{
-			ESP_LOGE(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
+			ESP_LOGD(TAG_WIFI, "Failed to enqueue packet to network stack %p, len %d", buffer, len);
 			vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
 			return ESP_FAIL;
 		}

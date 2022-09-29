@@ -114,7 +114,7 @@ BaseType_t xRINA_bind(flowAllocateHandle_t *pxFlowRequest)
                                   pdFALSE /*xWaitAllBits*/,
                                   portMAX_DELAY);
 
-        ESP_LOGD(TAG_RINA, "Flow Bound");
+        ESP_LOGE(TAG_RINA, "Flow Bound");
         return 0;
     }
 }
@@ -259,7 +259,7 @@ BaseType_t RINA_flowStatus(portId_t xAppPortId)
 
     if (xNormalIsFlowAllocated(xAppPortId) == pdFALSE)
     {
-        return 0;
+        return -1;
     }
 
     return 1;
@@ -280,8 +280,9 @@ BaseType_t prvConnect(flowAllocateHandle_t *pxFlowAllocateRequest)
         ESP_LOGE(TAG_RINA, "There is a flow allocated for that port Id");
         xResult = -1;
     }
+
     xResult = xRINA_bind(pxFlowAllocateRequest);
-    // maybe do a prebind?
+
     if (xResult == 0)
     {
 
@@ -318,7 +319,7 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
 {
 
     flowAllocateHandle_t *pxFlowAllocateRequest;
-    TickType_t xRemainingTime;
+    TickType_t xRemainingTime = portMAX_DELAY;
     BaseType_t xTimed = pdFALSE; /* Check non-blocking*/
     TimeOut_t xTimeOut;
     BaseType_t xResult = -1;
@@ -331,12 +332,13 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
 
     if (xResult == 0)
     {
+        /* Waiting for the flow allocation response*/
 
         for (;;)
         {
             if (xTimed == pdFALSE)
             {
-                xRemainingTime = pxFlowAllocateRequest->xReceiveBlockTime;
+                xRemainingTime = portMAX_DELAY; // pxFlowAllocateRequest->xReceiveBlockTime;
 
                 if (xRemainingTime == (TickType_t)0)
                 {
@@ -349,7 +351,6 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
                 vTaskSetTimeOutState(&xTimeOut);
             }
 
-            ESP_LOGD(TAG_RINA, "Checking Flow Status");
             xResult = RINA_flowStatus(pxFlowAllocateRequest->xPortId);
 
             if (xResult > 0)
@@ -364,13 +365,19 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
                 break;
             }
 
-            (void)xEventGroupWaitBits(pxFlowAllocateRequest->xEventGroup, (EventBits_t)eFLOW_ACCEPT, pdTRUE, pdFALSE, portMAX_DELAY);
+            (void)xEventGroupWaitBits(pxFlowAllocateRequest->xEventGroup, (EventBits_t)eFLOW_ACCEPT, pdTRUE, pdFALSE, xRemainingTime);
         }
         /* The IPCP-task will set the 'eFLOW_BOUND' bit when it has done its
          * job. */
     }
-    ESP_LOGD(TAG_RINA, "Flow allocated in the port Id:%d", pxFlowAllocateRequest->xPortId);
 
+    if (xResult != 0)
+    {
+        ESP_LOGE(TAG_RINA, "Flow was not allocated");
+        return xResult;
+    }
+
+    ESP_LOGI(TAG_RINA, "Flow allocated in the port Id:%d", pxFlowAllocateRequest->xPortId);
     return pxFlowAllocateRequest->xPortId;
 }
 
@@ -522,7 +529,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
                  * iteration.  */
 
                 xRemainingTime = pxFlowHandle->xReceiveBlockTime;
-                ESP_LOGD(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
+                ESP_LOGE(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
 
                 if (xRemainingTime == (TickType_t)0)
                 {
@@ -537,7 +544,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
                 xTimed = pdTRUE;
 
                 timer_delta = esp_timer_get_time();
-                ESP_LOGD(TAG_RINA, "Time finit check blocking: %d", timer_delta);
+                ESP_LOGE(TAG_RINA, "Time finit check blocking: %d", timer_delta);
 
                 /* Fetch the current time. */
                 vTaskSetTimeOutState(&xTimeOut);
@@ -573,7 +580,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
             /* Has the timeout been reached ? */
             if (xTaskCheckForTimeOut(&xTimeOut, &xRemainingTime) != pdFALSE)
             {
-                ESP_LOGD(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
+                ESP_LOGE(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
                 break;
             }
 

@@ -29,12 +29,6 @@
 void app_main(void)
 {
 	nvs_flash_init();
-	/*
-	if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-		ESP_ERROR_CHECK(nvs_flash_erase());
-		ret = nvs_flash_init();
-	}
-	ESP_ERROR_CHECK(ret);*/
 
 	RINA_IPCPInit();
 
@@ -47,6 +41,7 @@ void app_main(void)
 	void *buffer;
 	size_t xLenBuffer = 1024;
 	char *data;
+	size_t uxTxBytes = 0;
 
 	buffer = pvPortMalloc(xLenBuffer);
 
@@ -56,7 +51,7 @@ void app_main(void)
 
 	ESP_LOGD(TAG_APP, "----------- Requesting a Flow ----- ");
 
-	xAppPortId = RINA_flow_alloc("mobile.DIF", "STH1", "sensor1", xFlowSpec, Flags);
+	xAppPortId = RINA_flow_alloc("slice1.DIF", "st1", "sensorHub", xFlowSpec, Flags);
 
 	ESP_LOGD(TAG_APP, "Flow Port id: %d ", xAppPortId);
 	if (xAppPortId != -1)
@@ -67,26 +62,18 @@ void app_main(void)
 
 			// ESP_LOGD(TAG_APP, "Temperature: 30 C");
 
-			sprintf(json, "Temperature: 30 C\n");
+			sprintf(json, "Temperature: 30 C, Humidity: 24%%\n");
 
-			ESP_LOGD(TAG_APP, "json:%s", json);
-			if (RINA_flow_write(xAppPortId, (void *)json, strlen(json)))
+			uxTxBytes = RINA_flow_write(xAppPortId, (void *)json, strlen(json));
+
+			if (uxTxBytes == 0)
 			{
-				ESP_LOGD(TAG_APP, "Sent Data successfully");
+				ESP_LOGE(TAG_APP, "Error to send Data");
+				break;
 			}
-
-			xBytes = RINA_flow_read(xAppPortId, (void *)buffer, xLenBuffer);
-
-			if (xBytes > 0)
+			if (uxTxBytes > 0)
 			{
-				data = strdup(buffer);
-				ESP_LOGD(TAG_APP, "Receive data");
-				ESP_LOGD(TAG_APP, "Buffer: %s", data);
-				ESP_LOGD(TAG_APP, "Bytes received: %d", xBytes);
-			}
-			if (xBytes == 0)
-			{
-				ESP_LOGD(TAG_APP, "It was an error receiving the buffer");
+				ESP_LOGI(TAG_APP, "Sent Data successfully");
 			}
 
 			vTaskDelay(8000 / portTICK_RATE_MS);

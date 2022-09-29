@@ -22,10 +22,10 @@
 #include "nvs_flash.h"
 
 #define TAG_APP "[PING-APP]"
-#define PING_SIZE (32)
+#define PING_SIZE 1024U
 #define NUMBER_OF_PINGS (100)
-#define DIF "mobile.DIF"
-#define SERVER "sensor1"
+#define DIF "slice1.DIF"
+#define SERVER "pingserver"
 #define CLIENT "ping"
 
 void app_main(void)
@@ -58,21 +58,24 @@ void app_main(void)
     int time_delta;
     int time_delta2;
     float result;
-    float average;
+    float average = 0;
     int min, max, sum;
 
     float ns;
 
     void *bufferRx;
-    size_t xLenBufferRx = 512;
-    char *data;
-    size_t size_ping = 512;
-    char bufferTx[size_ping];
 
-    bufferRx = pvPortMalloc(xLenBufferRx);
-    memset(bufferRx, 0, xLenBufferRx);
+    size_t size_ping = (size_t)PING_SIZE;
+    void *bufferTx;
+
+    bufferRx = pvPortMalloc(size_ping);
+    bufferTx = pvPortMalloc(size_ping);
+
+    memset(bufferRx, 0, size_ping);
 
     memset(bufferTx, 'x', size_ping);
+
+    ESP_LOGI(TAG_APP, "Pinging %s with %d bytes of data: ", SERVER, strlen(bufferTx));
 
     vTaskDelay(2000);
 
@@ -109,7 +112,7 @@ void app_main(void)
             while (uxRxBytes < uxTxBytes)
             {
                 // vTaskDelay(10 / portTICK_RATE_MS);
-                uxRxBytes = RINA_flow_read(xAppPortId, (void *)bufferRx, xLenBufferRx);
+                uxRxBytes = RINA_flow_read(xAppPortId, (void *)bufferRx, size_ping);
                 time2 = esp_timer_get_time();
 
                 if (uxRxBytes == 0)
@@ -166,7 +169,8 @@ void app_main(void)
             sum = sum + RTT[i];
         }
     }
-    average = (sum / received);
+    if (received > 0)
+        average = (sum / received);
 
     ESP_LOGI(TAG_APP, "Ping Statistics to for %s:", SERVER);
     ESP_LOGI(TAG_APP, "     Packets: send = %d, received = %d , timeout = %d", NUMBER_OF_PINGS, received, NUMBER_OF_PINGS - received);
