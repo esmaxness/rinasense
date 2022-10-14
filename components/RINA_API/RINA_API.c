@@ -140,7 +140,7 @@ static flowAllocateHandle_t *prvRINACreateFlowRequest(string_t pcNameDIF,
                                                       string_t pcRemoteApp,
                                                       struct rinaFlowSpec_t *xFlowSpec)
 {
-    ESP_LOGD(TAG_RINA, "Creating a new flow request");
+    ESP_LOGE(TAG_RINA, "Creating a new flow request");
     portId_t xPortId; /* PortId to return to the user*/
     name_t *pxDIFName, *pxLocalName, *pxRemoteName;
     struct flowSpec_t *pxFlowSpecTmp;
@@ -204,7 +204,7 @@ static flowAllocateHandle_t *prvRINACreateFlowRequest(string_t pcNameDIF,
 
         /*xPortId set to zero until the TASK fill properly.*/
         xPortId = xIPCPAllocatePortId();
-        ESP_LOGD(TAG_RINA, "Port Id: %d Allocated", xPortId);
+        ESP_LOGE(TAG_RINA, "Port Id: %d Allocated", xPortId);
 
         /*Struct Data to sent attached into the event*/
 
@@ -326,7 +326,7 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
 
     pxFlowAllocateRequest = prvRINACreateFlowRequest(pcNameDIF, pcLocalApp, pcRemoteApp, xFlowSpec);
 
-    ESP_LOGD(TAG_RINA, "Connecting to IPCP Task");
+    ESP_LOGE(TAG_RINA, "Connecting to IPCP Task");
 
     xResult = prvConnect(pxFlowAllocateRequest);
 

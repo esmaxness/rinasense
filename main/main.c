@@ -10,6 +10,7 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#include "freertos/semphr.h"
 
 #include "configRINA.h"
 #include "IPCP.h"
@@ -21,12 +22,147 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-#define TAG_APP "[PING-APP]"
-#define PING_SIZE 1024U
-#define NUMBER_OF_PINGS (200)
-#define DIF "slice1.DIF"
-#define SERVER "pingserver"
+#define TAG_APP "[PING-PERF]"
+#define SDU_SIZE (1480)
+#define NUMBER_OF_PACKETS (1000)
+#define INTERVAL (1)
+#define RP_OPCODE_PERF 2
+#define DIF "mobile.DIF"
+#define SERVER "sensor1"
 #define CLIENT "ping"
+
+struct rp_config_msg
+{
+    uint64_t cnt;    /* packet/transaction count for the test
+                      * (0 means infinite) */
+    uint32_t opcode; /* opcode: ping, perf, rr ... */
+    uint32_t ticket; /* valid with RP_OPCODE_DATAFLOW */
+    uint32_t size;   /* packet size in bytes */
+} __attribute__((packed));
+
+struct rp_ticket_msg
+{
+    uint32_t ticket; /* ticket allocated by the server for the
+                      * client to identify the data flow */
+} __attribute__((packed));
+
+// bufferTx = pvPortMalloc(size_sdu);
+
+// memset(bufferTx, 'x', (size_t)SDU_SIZE);
+// memset(bufferTx + SDU_SIZE, '\0', 1);
+
+SemaphoreHandle_t xMutex;
+
+void control_task(void *pvParameters)
+{
+
+    struct rinaFlowSpec_t *xFlowSpec;
+    uint8_t Flags = 1;
+    xFlowSpec = pvPortMalloc(sizeof(*xFlowSpec));
+
+    size_t txMsg = 0;
+    size_t uxTxBytes = 0;
+    size_t rxMsg = 0;
+    int i = 0;
+
+    int RTT[NUMBER_OF_PACKETS];
+
+    int64_t time_start = 0,
+            time_end = 0;
+
+    int time_delta = 0;
+    int time_init = 0;
+
+    float pps, bps;
+    double time_inter;
+    struct rp_config_msg cfg;
+    struct rp_ticket_msg tmsg;
+
+    size_t size_sdu = (size_t)SDU_SIZE + 1;
+    void *bufferTx;
+    void *bufferRx;
+    volatile portId_t xControlPortId;
+
+    for (;;)
+    {
+        xSemaphoreTake(xMutex, portMAX_DELAY);
+
+        ESP_LOGI(TAG_APP, "----------- Requesting a Flow to Control ----- ");
+
+        // Requesting a controll flow
+        xControlPortId = RINA_flow_alloc(DIF, CLIENT, SERVER, xFlowSpec, Flags);
+
+        ESP_LOGI(TAG_APP, "Flow Port id: %d ", xControlPortId);
+
+        vTaskDelay(100);
+
+        xSemaphoreGive(xMutex);
+
+        // ESP_LOGI(TAG_APP, "----------- No should show ----- ");
+        /*
+                if (xControlPortId == -1)
+                {
+                    ESP_LOGE(TAG_APP, "rina_flow_alloc failed");
+                }
+
+                cfg.cnt = 10;
+                cfg.size = sizeof(uint16_t);
+                cfg.opcode = RP_OPCODE_PERF;
+
+                txMsg = RINA_flow_write(xControlPortId, (void *)&cfg, sizeof(cfg));
+
+                if (txMsg <= 0)
+                {
+                    ESP_LOGE(TAG_APP, "Error to send Data");
+                    // break;
+                }
+                else
+                {
+                    vTaskDelay(50);
+                    rxMsg = RINA_flow_read(xControlPortId, (void *)&tmsg, sizeof(tmsg));
+
+                    if (rxMsg != sizeof(tmsg))
+                    {
+                        ESP_LOGE(TAG_APP, "Error read ticket: %d", rxMsg);
+                    }
+                    ESP_LOGE(TAG_APP, "Ticket received: %d", rxMsg);
+                    // vTaskDelay(10);
+                }*/
+    }
+}
+
+void data_task(void *pvParameters)
+{
+
+    volatile struct rinaFlowSpec_t *xFlowSpec1;
+    volatile uint8_t Flags1 = 1;
+    xFlowSpec1 = pvPortMalloc(sizeof(*xFlowSpec1));
+
+    volatile portId_t xDataPortId;
+
+    for (;;)
+    {
+
+        xSemaphoreTake(xMutex, portMAX_DELAY);
+
+        ESP_LOGI(TAG_APP, "----------- Requesting a Flow to Data ----- ");
+
+        vTaskDelay(100);
+
+        xDataPortId = RINA_flow_alloc(DIF, CLIENT, SERVER, xFlowSpec1, Flags1);
+        ESP_LOGE(TAG_APP, "Flow Port id: %d ", xDataPortId);
+
+        vTaskDelay(100);
+
+        if (xDataPortId != -1)
+        {
+            ESP_LOGI(TAG_APP, "-----------------------------------------------\n ");
+            ESP_LOGI(TAG_APP, "Client connecting to %s, port %d \n: ", SERVER, xDataPortId);
+            ESP_LOGI(TAG_APP, "-----------------------------------------------\n ");
+        }
+        xSemaphoreGive(xMutex);
+    }
+}
 
 void app_main(void)
 {
@@ -41,150 +177,12 @@ void app_main(void)
 
     RINA_IPCPInit();
 
-    portId_t xAppPortId;
-    struct rinaFlowSpec_t *xFlowSpec = pvPortMalloc(sizeof(*xFlowSpec));
-    uint8_t Flags = 1;
-    int32_t uxRxBytes = 0;
-    size_t uxTxBytes;
-    int i = 0;
+    vTaskDelay(1000);
 
-    int RTT[NUMBER_OF_PINGS];
-    int received = 0;
+    xMutex = xSemaphoreCreateMutex();
 
-    int64_t time_start,
-        time_end,
-        time1,
-        time2;
-    int time_delta;
-    int time_delta2;
-    float result;
-    float average = 0;
-    int min, max, sum;
+    xTaskCreate(control_task, "Control", 1024 * 6, NULL, 6, NULL);
+    xTaskCreate(data_task, "Data", 1024 * 4, NULL, 3, NULL);
 
-    float ns;
-
-    void *bufferRx;
-
-    size_t size_ping = (size_t)PING_SIZE + 1;
-    void *bufferTx;
-
-    bufferRx = pvPortMalloc(size_ping);
-    bufferTx = pvPortMalloc(size_ping);
-
-    memset(bufferRx, 0, size_ping);
-
-    memset(bufferTx, 'x', (size_t)PING_SIZE);
-    memset(bufferTx + PING_SIZE, '\0', 1);
-
-    ESP_LOGI(TAG_APP, "Pinging %s with %d bytes of data: ", SERVER, strlen(bufferTx));
-
-    vTaskDelay(2000);
-
-    ESP_LOGD(TAG_APP, "----------- Requesting a Flow ----- ");
-
-    xAppPortId = RINA_flow_alloc(DIF, CLIENT, SERVER, xFlowSpec, Flags);
-
-    ESP_LOGI(TAG_APP, "Flow Allocated at Port id: %d ", xAppPortId);
-
-    // vTaskDelay(100);
-
-    time_start = esp_timer_get_time();
-
-    if (xAppPortId != -1)
-    {
-        ESP_LOGI(TAG_APP, "Pinging %s with %d bytes of data: ", SERVER, strlen(bufferTx));
-        while (i < NUMBER_OF_PINGS)
-        {
-
-            time1 = esp_timer_get_time();
-
-            uxTxBytes = RINA_flow_write(xAppPortId, (void *)bufferTx, strlen(bufferTx));
-
-            if (uxTxBytes == 0)
-            {
-                ESP_LOGE(TAG_APP, "Error to send Data");
-                break;
-            }
-
-            ESP_LOGD(TAG_APP, "Sended: %d", uxTxBytes);
-
-            uxRxBytes = 0;
-
-            while (uxRxBytes < uxTxBytes)
-            {
-                // vTaskDelay(10 / portTICK_RATE_MS);
-                uxRxBytes = RINA_flow_read(xAppPortId, (void *)bufferRx, size_ping);
-                time2 = esp_timer_get_time();
-
-                if (uxRxBytes == 0)
-                {
-                    ESP_LOGE(TAG_APP, "It was an error receiving the buffer");
-                    break;
-                }
-                if (uxRxBytes > 0)
-                {
-                    received++;
-                    time_delta = time2 - time1;
-
-                    // ESP_LOGD(TAG_APP, "%d bytes from server: rtt = %.3f ms\n", uxRxBytes, ns);
-                    // ESP_LOGI(TAG_APP, "%d bytes from server: rtt = %d ms", uxRxBytes, time_delta / 1000);
-                    ESP_LOGI(TAG_APP, "%d bytes from server: rtt = %.3f ms", uxRxBytes, (float)time_delta / 1000);
-                    RTT[i] = time_delta;
-                }
-                else
-                {
-                    ESP_LOGI(TAG_APP, "Request time out");
-                    RTT[i] = 0;
-                }
-            }
-
-            vTaskDelay(1000 / portTICK_RATE_MS);
-            i = i + 1;
-        }
-    }
-    time_end = esp_timer_get_time();
-    time_delta2 = time_end - time_start;
-
-    result = 1000000 * received;
-    result = result / time_delta2;
-    result = result * 8 * uxRxBytes;
-
-    min = 100000000000;
-    max = 0;
-    for (i = 1; i < NUMBER_OF_PINGS; i++)
-    {
-        if (RTT[i] > 0)
-        {
-            if (min > RTT[i])
-                min = RTT[i];
-            if (max < RTT[i])
-                max = RTT[i];
-        }
-    }
-    sum = 0;
-    for (i = 0; i < NUMBER_OF_PINGS; i++)
-    {
-
-        if (RTT[i] > 0)
-        {
-            sum = sum + RTT[i];
-        }
-    }
-    if (received > 0)
-        average = (sum / received);
-
-    ESP_LOGI(TAG_APP, "Ping Statistics to for %s:", SERVER);
-    ESP_LOGI(TAG_APP, "     Packets: send = %d, received = %d , timeout = %d", NUMBER_OF_PINGS, received, NUMBER_OF_PINGS - received);
-    ESP_LOGI(TAG_APP, "Approximate round trip times in milliseconds: ");
-    ESP_LOGI(TAG_APP, "     Minimum = %.3f ms , Maximum = %.3f ms, Average = %.3f ms ", (float)min / 1000, (float)max / 1000, average / 1000);
-    // ESP_LOGI(TAG_APP, "     Througput = %f bps\n", result);
-
-    if (RINA_flow_close(xAppPortId))
-    {
-        ESP_LOGI(TAG_APP, "Flow Deallocated");
-    }
-    else
-    {
-        ESP_LOGI(TAG_APP, "It was not possible to deallocated the flow");
-    }
+    vTaskStartScheduler();
 }

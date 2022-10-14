@@ -23,7 +23,7 @@
 
 #define TAG_APP "[PING-APP]"
 #define PING_SIZE 1024U
-#define NUMBER_OF_PINGS (100)
+#define NUMBER_OF_PINGS (200)
 #define DIF "slice1.DIF"
 #define SERVER "pingserver"
 #define CLIENT "ping"
@@ -65,7 +65,7 @@ void app_main(void)
 
     void *bufferRx;
 
-    size_t size_ping = (size_t)PING_SIZE;
+    size_t size_ping = (size_t)PING_SIZE + 1;
     void *bufferTx;
 
     bufferRx = pvPortMalloc(size_ping);
@@ -73,7 +73,8 @@ void app_main(void)
 
     memset(bufferRx, 0, size_ping);
 
-    memset(bufferTx, 'x', size_ping);
+    memset(bufferTx, 'x', (size_t)PING_SIZE);
+    memset(bufferTx + PING_SIZE, '\0', 1);
 
     ESP_LOGI(TAG_APP, "Pinging %s with %d bytes of data: ", SERVER, strlen(bufferTx));
 

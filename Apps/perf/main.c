@@ -22,7 +22,7 @@
 #include "nvs_flash.h"
 
 #define TAG_APP "[PING-PERF]"
-#define PING_SIZE (32)
+#define SDU_SIZE (32)
 #define NUMBER_OF_PACKETS (1000)
 #define INTERVAL (1)
 #define DIF "mobile.DIF"
@@ -61,12 +61,13 @@ void app_main(void)
     float pps, bps;
     double time_inter;
 
-    char *data;
+    size_t size_sdu = (size_t)SDU_SIZE + 1;
+    void *bufferTx;
 
-    size_t size_ping = 32;
-    char bufferTx[size_ping];
+    bufferTx = pvPortMalloc(size_sdu);
 
-    memset(bufferTx, 'x', size_ping); // 32bytes  (size_t)(PING_SIZE)
+    memset(bufferTx, 'x', (size_t)SDU_SIZE);
+    memset(bufferTx + SDU_SIZE, '\0', 1);
 
     vTaskDelay(2000);
 
@@ -108,16 +109,17 @@ void app_main(void)
 
             time_inter = (float)time_delta / 1000000;
 
-            ESP_LOGI(TAG_APP, "Time inter = %f", time_inter);
-            ESP_LOGI(TAG_APP, "Time delta= %d", time_delta);
-            ESP_LOGI(TAG_APP, "# packets sended= %d", count);
+            // ESP_LOGI(TAG_APP, "Time inter = %f", time_inter);
+            // ESP_LOGI(TAG_APP, "Time delta= %d", time_delta);
+
             pps = count * strlen(bufferTx);
             bps = pps * 8 * 1000000 / time_delta;
-            bps = bps / 1000000;
+            bps = bps / 1000;
+            ESP_LOGI(TAG_APP, "Time interval to send data = %.1f sec", ((float)time_delta + (float)time_init) / 1000000);
+            ESP_LOGI(TAG_APP, "Number of packets sended = %d", count);
+            ESP_LOGI(TAG_APP, "Total Bytes transmitted = %3.3f KBytes", pps / 1000);
+            ESP_LOGI(TAG_APP, "Bytes Rate transmitted = %3.3f Kbits/sec", bps);
 
-            ESP_LOGI(TAG_APP, "  %.1f-%.1f sec         %3.3f MBytes        %3.3f  Mbits/sec",
-                     (float)time_init / 1000000,
-                     ((float)time_delta + (float)time_init) / 1000000, pps / 10000000, bps);
             time_init = time_delta;
             time_start = time_end;
             time_delta = 0;
