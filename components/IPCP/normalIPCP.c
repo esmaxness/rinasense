@@ -215,7 +215,7 @@ BaseType_t xNormalDuWrite(struct ipcpInstanceData_t *pxData,
 
         if (!xEfcpContainerWrite(pxData->pxEfcpc, pxFlow->xActive, pxDu))
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "Could not send sdu to EFCP Container");
+                ESP_LOGD(TAG_IPCPNORMAL, "Could not send sdu to EFCP Container");
                 return pdFALSE;
         }
 
@@ -747,7 +747,7 @@ BaseType_t xNormalIsFlowAllocated(portId_t xPortId)
         pxFlow = prvNormalFindFlow(pxIpcpData, xPortId);
         if (!pxFlow)
         {
-                ESP_LOGE(TAG_IPCPNORMAL, "Flow status: not allocated");
+                ESP_LOGD(TAG_IPCPNORMAL, "Flow status: not allocated");
                 return pdFALSE;
         }
         if (pxFlow->eState == ePORT_STATE_ALLOCATED)

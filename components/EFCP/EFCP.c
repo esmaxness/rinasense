@@ -227,7 +227,7 @@ static BaseType_t xEfcpWrite(struct efcp_t *pxEfcp, struct du_t *pxDu)
         /* No fragmentation */
         if (!xDtpWrite(pxEfcp->pxDtp, pxDu))
         {
-                ESP_LOGE(TAG_EFCP, "Could not write SDU to DTP");
+                ESP_LOGD(TAG_EFCP, "Could not write SDU to DTP");
                 return pdFALSE;
         }
 
@@ -502,14 +502,14 @@ BaseType_t xEfcpConnectionUpdate(struct efcpContainer_t *pxContainer,
         }
         pxEfcp->pxConnection->xDestinationCepId = to;
 
-        ESP_LOGE(TAG_EFCP, "Connection updated");
-        ESP_LOGE(TAG_EFCP, "  Source address:     %d",
+        ESP_LOGD(TAG_EFCP, "Connection updated");
+        ESP_LOGD(TAG_EFCP, "  Source address:     %d",
                  pxEfcp->pxConnection->xSourceAddress);
-        ESP_LOGE(TAG_EFCP, "  Destination address %d",
+        ESP_LOGD(TAG_EFCP, "  Destination address %d",
                  pxEfcp->pxConnection->xDestinationAddress);
-        ESP_LOGE(TAG_EFCP, "  Destination cep id: %d",
+        ESP_LOGD(TAG_EFCP, "  Destination cep id: %d",
                  pxEfcp->pxConnection->xDestinationCepId);
-        ESP_LOGE(TAG_EFCP, "  Source cep id:      %d",
+        ESP_LOGD(TAG_EFCP, "  Source cep id:      %d",
                  pxEfcp->pxConnection->xSourceCepId);
 
         return pdTRUE;

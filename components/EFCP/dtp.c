@@ -123,7 +123,7 @@ BaseType_t xDtpPduSend(dtp_t *pxDtp, rmt_t *pxRmt, struct du_t *pxDu)
 
 BaseType_t xDtpWrite(dtp_t *pxDtpInstance, struct du_t *pxDu)
 {
-        ESP_LOGD(TAG_DTP, "xDtpWrite");
+        ESP_LOGD(TAG_DTP, "Writing in the DTP");
         dtcp_t *pxDtcp;
         struct du_t *pxTempDu;
         struct dtp_ps *ps;
@@ -166,7 +166,7 @@ BaseType_t xDtpWrite(dtp_t *pxDtpInstance, struct du_t *pxDu)
         ESP_LOGD(TAG_DTP, "Sbytes: %d", sbytes);
         if (!xDuEncap(pxDu, PDU_TYPE_DT))
         {
-                ESP_LOGE(TAG_DTP, "Could not encap PDU");
+                ESP_LOGD(TAG_DTP, "Could not encap PDU");
                 xDuDestroy(pxDu);
                 return pdFALSE;
         }

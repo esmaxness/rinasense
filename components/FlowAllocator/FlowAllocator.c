@@ -43,6 +43,7 @@ void prvAddFlowRequestEntry(flowAllocatorInstance_t *pxFAI)
     {
         if (xFlowRequestTable[x].xValid == pdFALSE)
         {
+            // ESP_LOGE(TAG_FA, "Adding FAI into table with portId: %d", pxFAI->xPortId);
             xFlowRequestTable[x].pxFAI = pxFAI;
             xFlowRequestTable[x].xValid = pdTRUE;
 
@@ -60,7 +61,9 @@ flowAllocatorInstance_t *pxFAFindInstance(portId_t xPortId)
     {
         if (xFlowRequestTable[x].xValid == pdTRUE)
         {
-            pxFAI = xFlowRequestTable->pxFAI;
+            pxFAI = xFlowRequestTable[x].pxFAI;
+            // ESP_LOGE(TAG_FA, "Finding: %d", xPortId);
+            // ESP_LOGE(TAG_FA, "Founded: %d", pxFAI->xPortId);
             if (pxFAI->xPortId == xPortId) // ad xPortId
             {
                 return pxFAI;
@@ -240,8 +243,12 @@ void vFlowAllocatorFlowRequest(
     if (!pxNeighbor)
     {
         ESP_LOGE(TAG_FA, "No Neighbor founded");
+        pxFlow->xRemoteAddress = 0;
     }
-    pxFlow->xRemoteAddress = pxNeighbor->xNeighborAddress;
+    else
+    {
+        pxFlow->xRemoteAddress = pxNeighbor->xNeighborAddress;
+    }
 
     pxFlow->xSourcePortId = xAppPortId;
 
@@ -337,6 +344,8 @@ BaseType_t xFlowAllocatorHandleCreateR(serObjectValue_t *pxSerObjValue, int resu
         return pdFALSE;
     }
 
+    ESP_LOGD(TAG_FA, "LocalCepId: %d", pxFlow->pxConnectionId->xDestination);
+
     if (!xNormalConnectionModify(pxFlow->pxConnectionId->xDestination,
                                  pxFlow->xRemoteAddress,
                                  pxFlow->xSourceAddress))
@@ -370,7 +379,7 @@ BaseType_t
 xFlowAllocatorHandleDeleteR(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
-    ESP_LOGE(TAG_FA, "HANDLE DELETE");
+    ESP_LOGD(TAG_FA, "HANDLE DELETE");
 
     // Delete connection
     // delete EFCP instance
@@ -384,7 +393,7 @@ BaseType_t
 xFlowAllocatorHandleDelete(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
-    ESP_LOGE(TAG_FA, "HANDLE DELETE");
+    ESP_LOGD(TAG_FA, "HANDLE DELETE");
 
     // Delete connection
     // delete EFCP instance

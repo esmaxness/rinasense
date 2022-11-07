@@ -17,6 +17,7 @@
 #include "du.h"
 #include "IpcManager.h"
 #include "rstr.h"
+#include "rfifo.h"
 
 #include "esp_log.h"
 
@@ -62,9 +63,6 @@ struct ipcpFactoryData_t
 };
 
 static struct ipcpFactoryData_t xFactoryShimWifiData;
-
-/* @brief Created a Queue type rfifo_t when a flow is allocated for request */
-static rfifo_t *prvShimCreateQueue(void);
 
 /* @brief Find a flow previously allocated*/
 static shimFlow_t *prvShimFindFlow(struct ipcpInstanceData_t *pxData);
@@ -259,10 +257,10 @@ BaseType_t xShimFlowAllocateRequest(portId_t xPortId,
 		listSET_LIST_ITEM_OWNER(&(pxFlow->xFlowItem), pxFlow);
 		vListInsert(&pxData->xFlowsList, &pxFlow->xFlowItem);
 
-		pxFlow->pxSduQueue = prvShimCreateQueue();
+		pxFlow->pxSduQueue = pxRfifoCreate();
 		if (!pxFlow->pxSduQueue)
 		{
-			ESP_LOGE(TAG_SHIM, "Destination protocol address is not ok");
+			ESP_LOGE(TAG_SHIM, "FIFO Queue was not created properly");
 			prvShimUnbindDestroyFlow(pxData, pxFlow);
 			return pdFALSE;
 		}
@@ -815,44 +813,6 @@ static shimFlow_t *prvShimFindFlow(struct ipcpInstanceData_t *pxData)
 	return NULL;
 }
 
-static rfifo_t *prvShimCreateQueue(void)
-{
-	rfifo_t *xFifo = pvPortMalloc(sizeof(*xFifo));
-
-	xFifo->xQueue = xQueueCreate(SIZE_SDU_QUEUE, sizeof(uint32_t));
-
-	if (!xFifo->xQueue)
-	{
-		vPortFree(xFifo);
-		return NULL;
-	}
-
-	return xFifo;
-}
-
-int QueueDestroy(rfifo_t *f,
-				 void (*dtor)(void *e))
-{
-	if (!f)
-	{
-		ESP_LOGE(TAG_SHIM, "Bogus input parameters, can't destroy NULL");
-		return -1;
-	}
-	if (!dtor)
-	{
-		ESP_LOGE(TAG_SHIM, "Bogus input parameters, no destructor provided");
-		return -1;
-	}
-
-	vQueueDelete(f->xQueue);
-
-	vPortFree(f);
-
-	ESP_LOGD(TAG_SHIM, "FIFO %pK destroyed successfully", f);
-
-	return 0;
-}
-
 // Move to ARP
 
 BaseType_t xShimIsGPAOK(const gpa_t *pxGpa)
@@ -1062,7 +1022,7 @@ BaseType_t xShimSDUWrite(struct ipcpInstanceData_t *pxData, portId_t xId, struct
 	ESP_LOGD(TAG_SHIM, "SDUWrite: Encapsulating packet into Ethernet Frame");
 	/* Get a Network Buffer with size total ethernet + PDU size*/
 
-	pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(uxHeadLen + uxLength, (TickType_t)0U);
+	pxNetworkBuffer = pxGetNetworkBufferWithDescriptor(uxHeadLen + uxLength, xDescriptorWaitTime);
 
 	if (pxNetworkBuffer == NULL)
 	{

@@ -22,6 +22,11 @@
 #define CEP_ID_WRONG -1
 #define ADDRESS_WRONG -1
 #define QOS_ID_WRONG -1
+/*
+static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+#define taskENTER_CRITICAL() taskENTER_CRITICAL(&mux)
+#define taskEXIT_CRITICAL() taskEXIT_CRITICAL(&mux)
+*/
 
 typedef int32_t portId_t;
 

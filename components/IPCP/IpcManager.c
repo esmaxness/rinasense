@@ -31,6 +31,7 @@
 #include "FlowAllocator.h"
 #include "ShimIPCP.h"
 #include "EFCP.h"
+#include "num_mgr.h"
 
 #include "esp_log.h"
 
@@ -56,7 +57,8 @@ BaseType_t xIpcManagerInit(ipcManager_t *pxIpcManager)
     pxPidm = pvPortMalloc(sizeof(*pxPidm));
     pxIpcpIdm = pvPortMalloc(sizeof(*pxIpcpIdm));
 
-    pxPidm = pxPidmCreate();
+    // pxPidm = pxPidmCreate();
+    pxPidm = pxNumMgrCreate(10);
     pxIpcpIdm = pxIpcpIdmCreate();
 
     // pxIpcManager->pxFactories = pxIpcpFactories;

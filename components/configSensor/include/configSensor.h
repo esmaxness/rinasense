@@ -72,7 +72,7 @@
  * stack. EVENT_QUEUE_LENGTH sets the maximum number of events that can
  * be queued for processing at any one time.  The event queue must be a minimum of
  * 5 greater than the total number of network buffers. */
-#define EVENT_QUEUE_LENGTH (NUM_NETWORK_BUFFER_DESCRIPTORS + 5)
+#define EVENT_QUEUE_LENGTH (NUM_NETWORK_BUFFER_DESCRIPTORS + 6)
 
 /** @brief Maximum time the IPCP task is allowed to remain in the Blocked state.*/
 #define MAX_IPCP_TASK_SLEEP_TIME (pdMS_TO_TICKS(10000UL))
@@ -90,7 +90,7 @@
 
 #define IPCP_TASK_PRIORITY (configMAX_PRIORITIES - 2)
 
-#define IPCP_TASK_STACK_SIZE_WORDS (configMINIMAL_STACK_SIZE * 14)
+#define IPCP_TASK_STACK_SIZE_WORDS (configMINIMAL_STACK_SIZE * 16)
 
 /*********   Configure Shim Parameters  ************/
 /*TAG for Debugging*/
@@ -98,15 +98,15 @@
 
 /*********   Configure EFCP PArameters **************/
 
-#define EFCP_IMAP_ENTRIES (5)
+#define EFCP_IMAP_ENTRIES (3)
 #define TAG_EFCP "[EFCP]"
 
 #define MAX_SDU_SIZE (1500)
 
 #define TAG_RINA "[RINA_API]"
 
-#define FLOW_DEFAULT_RECEIVE_BLOCK_TIME (5 / portTICK_PERIOD_MS) /* 10 ms*/
-#define FLOW_DEFAULT_SEND_BLOCK_TIME (5 / portTICK_PERIOD_MS)	 /* 10 ms*/
+#define FLOW_DEFAULT_RECEIVE_BLOCK_TIME (100 / portTICK_PERIOD_MS) /* 10 ms*/
+#define FLOW_DEFAULT_SEND_BLOCK_TIME (100 / portTICK_PERIOD_MS)	   /* 10 ms*/
 
 #define INSTANCES_IPCP_ENTRIES (5)
 
@@ -116,6 +116,8 @@
 #define TAG_ENROLLMENT "[ENROLLMENT]"
 
 #define TAG_FA "[FLOW_ALLOCATOR]"
-#define FLOWS_REQUEST (10)
+#define FLOWS_REQUEST (5)
+
+#define TAG_QUEUE "[FIFO QUEUE]"
 
 #endif

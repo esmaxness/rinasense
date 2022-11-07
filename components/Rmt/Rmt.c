@@ -17,6 +17,10 @@
 #include "configRINA.h"
 //#include "EFCP.h"
 
+static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
+#define MAX_PDUS_SENT_PER_CYCLE 10
+
 /** @brief RMT Array PortId Created.
  *  */
 static portTableEntry_t xPortIdTable[2];
@@ -27,16 +31,16 @@ pci_t *vCastPointerTo_pci_t(void *pvArgument);
 // BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portId_t xFrom);
 
 /* @brief Called when a SDU arrived into the RMT from the EFCP Container*/
-static int xRmtN1PortWriteDu(rmt_t *pxRmt, rmtN1Port_t *pxN1Port, struct du_t *pxDu);
+static int xRmtN1PortWriteDu(rmt_t *pxRmt, struct rmtN1Port_t *pxN1Port, struct du_t *pxDu);
 
 /* @brief Create an N-1 Port in the RMT Component*/
-static rmtN1Port_t *pxRmtN1PortCreate(portId_t xId, ipcpInstance_t *pxN1Ipcp);
+static struct rmtN1Port_t *pxRmtN1PortCreate(portId_t xId, ipcpInstance_t *pxN1Ipcp);
 
-static rmtN1Port_t *pxRmtN1PortCreate(portId_t xId, ipcpInstance_t *pxN1Ipcp)
+static struct rmtN1Port_t *pxRmtN1PortCreate(portId_t xId, ipcpInstance_t *pxN1Ipcp)
 {
 
 	ESP_LOGD(TAG_RMT, "Creating a N-1 Port in the RMT");
-	rmtN1Port_t *pxTmp;
+	struct rmtN1Port_t *pxTmp;
 
 	// configASSERT(IS_PORT_ID_OK(xId));
 
@@ -56,6 +60,7 @@ static rmtN1Port_t *pxRmtN1PortCreate(portId_t xId, ipcpInstance_t *pxN1Ipcp)
 	pxTmp->xStats.txBytes = 0;
 	pxTmp->xStats.rxPdus = 0;
 	pxTmp->xStats.rxBytes = 0;
+	pxTmp->pxRmtPsQueues = pxRmtQueueCreate(xId);
 
 	ESP_LOGD(TAG_RMT, "N-1 port %pK created successfully (port-id = %d)", pxTmp, xId);
 
@@ -71,7 +76,7 @@ BaseType_t xRmtN1PortBind(rmt_t *pxRmtInstance, portId_t xId, ipcpInstance_t *px
 {
 	ESP_LOGD(TAG_RMT, "Binding the RMT with the port id:%d", xId);
 
-	rmtN1Port_t *pxTmp;
+	struct rmtN1Port_t *pxTmp;
 	// struct rmt_ps *ps;
 
 	if (!pxRmtInstance)
@@ -261,7 +266,7 @@ BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portI
 	pduType_t xPduType;
 	address_t xDstAddr;
 	qosId_t xQosId;
-	rmtN1Port_t *pxN1Port;
+	struct rmtN1Port_t *pxN1Port;
 	size_t uxBytes;
 
 	if (!pxData->pxRmt)
@@ -376,8 +381,28 @@ BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portI
 	}
 }
 
+void vRmtN1PortBusy(rmt_t *pxRmt, NetworkBufferDescriptor_t *pxNetworkBuffer)
+{
+	struct du_t *pxDu;
+
+	pxDu = pvPortMalloc(sizeof(*pxDu));
+	pxDu->pxNetworkBuffer = pxNetworkBuffer;
+	vTaskSuspendAll();
+	{
+		taskENTER_CRITICAL(&mux);
+		{
+
+			pxRmt->pxN1Port->uxBusy = pdTRUE;
+			(void)xRfifoPushHead(pxRmt->pxN1Port->pxRmtPsQueues->pxDtQueue, (void *)&pxDu);
+			pxRmt->pxN1Port->pxPendingDu = NULL;
+		}
+		taskEXIT_CRITICAL(&mux);
+	}
+	(void)xTaskResumeAll();
+}
+
 static BaseType_t xRmtN1PortWriteDu(rmt_t *pxRmt,
-									rmtN1Port_t *pxN1Port,
+									struct rmtN1Port_t *pxN1Port,
 									struct du_t *pxDu)
 {
 
@@ -385,15 +410,16 @@ static BaseType_t xRmtN1PortWriteDu(rmt_t *pxRmt,
 	ssize_t bytes = pxDu->pxNetworkBuffer->xDataLength;
 
 	ESP_LOGD(TAG_RMT, "Gonna send SDU to port-id %d", pxN1Port->xPortId);
+	pxRmt->pxN1Port = pxN1Port;
 	ret = pxN1Port->pxN1Ipcp->pxOps->duWrite(pxN1Port->pxN1Ipcp->pxData, pxN1Port->xPortId, pxDu, false);
-	// ESP_LOGD(TAG_RMT, "xRmtN1PortWriteDu ret:%d", ret);
 
+	/*TODO: Change this to support the RMT queue*/
 	if (!ret)
 		return pdFALSE;
 
 	if (ret == pdFALSE)
 	{
-		// n1_port_lock(n1_port);
+
 		if (pxN1Port->pxPendingDu)
 		{
 			ESP_LOGE(TAG_RMT, "Already a pending SDU present for port %d",
@@ -413,8 +439,6 @@ static BaseType_t xRmtN1PortWriteDu(rmt_t *pxRmt,
 		}
 		else
 			pxN1Port->eState = eN1_PORT_STATE_DISABLED;
-
-		// n1_port_unlock(n1_port);
 	}
 
 	return pdTRUE;
@@ -427,7 +451,7 @@ BaseType_t xRmtSendPortId(rmt_t *pxRmtInstance,
 
 	ESP_LOGD(TAG_RMT, "Processing DU to be send");
 
-	rmtN1Port_t *pxN1Port;
+	struct rmtN1Port_t *pxN1Port;
 	// rmtPs_t *ps;//???
 	int cases;
 	BaseType_t ret;
@@ -452,38 +476,37 @@ BaseType_t xRmtSendPortId(rmt_t *pxRmtInstance,
 		return pdFALSE;
 	}
 
-	// n1_port_lock(n1_port);
-
 	xMustEnqueue = pdFALSE;
-	if (pxN1Port->xStats.plen ||
-		pxN1Port->uxBusy ||
-		pxN1Port->eState == eN1_PORT_STATE_DISABLED)
+	if (pxN1Port->uxBusy)
 	{
+
 		xMustEnqueue = pdTRUE;
 	}
 
-	// ret = ps->rmt_enqueue_policy(ps, n1_port, du, must_enqueue);
-	cases = 0; // Send Default policy, change later.
-	// rcu_read_unlock();
-	switch (cases)
+	ret = uxRmtEnqueueDfltPolicy(pxN1Port, pxDu, xMustEnqueue);
+	// cases = 0; // Send Default policy, change later.
+
+	switch (ret)
 	{
-#if 0
+
 	case RMT_PS_ENQ_SCHED:
-		n1_port->stats.plen++;
-		tasklet_hi_schedule(&instance->egress_tasklet);
-		ret = 0;
+		pxN1Port->xStats.plen++;
+		/* send an event to the RINA task to activate the Queue Timer to schedule and send data.*/
+		// ESP_LOGE(TAG_RMT, "SCHEDULE");
+
+		ret = pdTRUE;
 		break;
 	case RMT_PS_ENQ_DROP:
-		n1_port->stats.drop_pdus++;
-		LOG_ERR("PDU dropped while enqueing");
-		ret = 0;
+		pxN1Port->xStats.dropPdus++;
+		// ESP_LOGE(TAG_RMT, "PDU dropped while enqueing");
+		ret = pdTRUE;
 		break;
 	case RMT_PS_ENQ_ERR:
-		n1_port->stats.err_pdus++;
-		LOG_ERR("Some error occurred while enqueuing PDU");
-		ret = 0;
+		pxN1Port->xStats.errPdus++;
+		ESP_LOGE(TAG_RMT, "Some error occurred while enqueuing PDU");
+		ret = pdTRUE;
 		break;
-#endif
+
 	case RMT_PS_ENQ_SEND:
 		if (xMustEnqueue)
 		{
@@ -495,15 +518,11 @@ BaseType_t xRmtSendPortId(rmt_t *pxRmtInstance,
 			break;
 		}
 
-		pxN1Port->uxBusy = pdTRUE;
-
-		// n1_port_unlock(n1_port);
 		ESP_LOGD(TAG_RMT, "PDU ready to be sent, no need to enqueue");
 		ret = xRmtN1PortWriteDu(pxRmtInstance, pxN1Port, pxDu);
-		/*FIXME LB: This is just horrible, needs to be rethinked */
-		// N1_port_lock(n1_port);
-		pxN1Port->uxBusy = pdFALSE;
-		if (cases >= 0)
+		// ESP_LOGE(TAG_RMT, "Sended");
+
+		if (ret >= 0)
 		{
 			stats_inc(tx, pxN1Port, ret);
 			ret = pdTRUE;
@@ -582,7 +601,7 @@ pci_t *vCastPointerTo_pci_t(void *pvArgument)
 rmt_t *pxRmtCreate(struct efcpContainer_t *pxEfcpc)
 {
 	rmt_t *pxRmtTmp;
-	rmtN1Port_t *pxPortN1;
+	struct rmtN1Port_t *pxPortN1;
 
 	pxPortN1 = pvPortMalloc(sizeof(*pxPortN1));
 
@@ -627,4 +646,55 @@ rmt_t *pxRmtCreate(struct efcpContainer_t *pxEfcpc)
 
 	ESP_LOGD(TAG_RMT, "Instance %pK initialized successfully", pxRmtTmp);
 	return pxRmtTmp;
+}
+
+BaseType_t xRmtDequeu(rmt_t *pxRmt)
+{
+
+	struct du_t *pxDu = NULL;
+	int ret;
+	int pdus_sent = 0;
+
+	if (!pxRmt)
+	{
+		ESP_LOGE(TAG_RMT, "No RMT instance passed");
+	}
+	pdus_sent = 0;
+	ret = 0;
+
+	while (pdus_sent < MAX_PDUS_SENT_PER_CYCLE)
+	{
+
+		pxDu = pxRmtDequeueDfltPolicy(pxRmt->pxN1Port);
+		if (!pxDu)
+		{
+			ESP_LOGD(TAG_RMT, "No SDU to be sended");
+			break;
+		}
+
+		ret = xRmtN1PortWriteDu(pxRmt, pxRmt->pxN1Port, pxDu);
+
+		if (ret < 0)
+			break;
+		pdus_sent++;
+	}
+
+	if (!xRfifoIsEmpty(pxRmt->pxN1Port->pxRmtPsQueues->pxDtQueue))
+	{
+		return pdFALSE;
+	}
+	else
+	{
+		ESP_LOGD(TAG_RMT, "Port is not Busy anymore");
+		vTaskSuspendAll();
+		{
+			taskENTER_CRITICAL(&mux);
+			{
+				pxRmt->pxN1Port->uxBusy = pdFALSE;
+			}
+			taskEXIT_CRITICAL(&mux);
+		}
+		(void)xTaskResumeAll();
+		return pdTRUE;
+	}
 }

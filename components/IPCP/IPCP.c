@@ -19,6 +19,7 @@
 #include "normalIPCP.h"
 #include "IpcManager.h"
 #include "RINA_API.h"
+#include "num_mgr.h"
 
 #include "Enrollment.h"
 #include "esp_log.h"
@@ -88,6 +89,8 @@ static IPCPTimer_t xARPTimer;
 
 static IPCPTimer_t xFATimer;
 
+static IPCPTimer_t xRMTQueueTimer;
+
 void RINA_NetworkDown(void);
 
 void vIpcpInit(void);
@@ -120,6 +123,8 @@ static BaseType_t prvIPCPTimerCheck(IPCPTimer_t *pxTimer);
 
 static void prvIPCPTimerReload(IPCPTimer_t *pxTimer,
                                TickType_t xTime);
+
+void vSchedulerRMTDequeue(BaseType_t xEnableState);
 
 /*
  * Returns pdTRUE if the IP task has been created and is initialised.  Otherwise
@@ -211,12 +216,15 @@ static void prvIPCPTask(void *pvParameters)
     // Init shim use API?
     vShimWiFiInit(pxShimInstance);
 
+    /* Set timer unsigned, if there is drivers problems so set to bActive*/
+    xRMTQueueTimer.bActive = pdFALSE_UNSIGNED;
+
     /* Loop, processing IP events. */
     for (;;)
     {
         // ipconfigWATCHDOG_TIMER();
 
-        /* Check the ARP, DHCP and TCP timers to see if there is any periodic
+        /* Check the ARP, RMT timers to see if there is any periodic
          * or timeout processing to perform. */
         prvCheckNetworkTimers();
 
@@ -268,7 +276,14 @@ static void prvIPCPTask(void *pvParameters)
             ESP_LOGD(TAG_IPCPNORMAL, "**********TIME  TRANSMITED************");
             ESP_LOGD(TAG_IPCPNORMAL, "time TX: %d us", time_Tx);
 
-            (void)xNetworkInterfaceOutput(pxDescriptor, pdTRUE);
+            if (!xNetworkInterfaceOutput(pxDescriptor, pdTRUE))
+            {
+                /*Call RMT and set shim is busy*/
+                ESP_LOGD(TAG_IPCPMANAGER, "Network Busy, setting N1Port busy state");
+                prvIPCPTimerReload((&xRMTQueueTimer), (TickType_t)10U);
+                vRmtN1PortBusy(pxIpcpData->pxRmt, pxDescriptor);
+                // xRMTQueueTimer.bActive = pdTRUE_SIGNED;
+            }
         }
         break;
 
@@ -298,6 +313,11 @@ static void prvIPCPTask(void *pvParameters)
             ESP_LOGD(TAG_IPCPMANAGER, "Setting FA timer to expired");
             vIpcpSetFATimerExpiredState(pdTRUE);
 
+            break;
+
+        case eRMTQUEUETimerEvent:
+            /* Calling to dequeue function */
+            xRmtDequeu(pxIpcpData->pxRmt);
             break;
         case eFlowDeallocateEvent:
 
@@ -544,6 +564,7 @@ BaseType_t xSendEventStructToIPCPTask(const RINAStackEvent_t *pxEvent,
              * respond. */
             if ((xIsCallingFromIPCPTask() == pdTRUE) && (uxUseTimeout > (TickType_t)0U))
             {
+
                 uxUseTimeout = (TickType_t)0;
             }
 
@@ -788,6 +809,13 @@ static TickType_t prvCalculateSleepTime(void)
             xMaximumSleepTime = xARPTimer.ulRemainingTime;
         }
     }
+    if (xRMTQueueTimer.bActive != pdFALSE_UNSIGNED)
+    {
+        if (xRMTQueueTimer.ulRemainingTime < xMaximumSleepTime)
+        {
+            xMaximumSleepTime = xRMTQueueTimer.ulRemainingTime;
+        }
+    }
 
     return xMaximumSleepTime;
 }
@@ -801,8 +829,23 @@ static void prvCheckNetworkTimers(void)
     /* Is it time for ARP processing? */
     if (prvIPCPTimerCheck(&xARPTimer) != pdFALSE)
     {
-        ESP_LOGD(TAG_SHIM, "TEST");
+        ESP_LOGD(TAG_SHIM, "Time to check ARP cache");
         (void)xSendEventToIPCPTask(eARPTimerEvent);
+    }
+    if (prvIPCPTimerCheck(&xRMTQueueTimer) != pdFALSE)
+    {
+        ESP_LOGD(TAG_SHIM, "Time to check RMT QUEUE");
+        if (!xRmtDequeu(pxIpcpData->pxRmt))
+        {
+            prvIPCPTimerReload(&xRMTQueueTimer, (TickType_t)10U);
+            // vTaskDelay(1);
+        }
+        else
+        {
+            /* Set timer unsigned, if there is drivers problems so set to bActive*/
+
+            xRMTQueueTimer.bActive = pdFALSE_UNSIGNED;
+        }
     }
 }
 
@@ -851,6 +894,7 @@ static BaseType_t prvIPCPTimerCheck(IPCPTimer_t *pxTimer)
     if (pxTimer->bActive == pdFALSE_UNSIGNED)
     {
         /* The timer is not enabled. */
+        // ESP_LOGE(TAG_IPCPMANAGER, "Timer not enable");
         xReturn = pdFALSE;
     }
     else
@@ -922,6 +966,7 @@ static void prvIPCPTimerStart(IPCPTimer_t *pxTimer,
     }
 
     pxTimer->bActive = pdTRUE_UNSIGNED;
+    // ESP_LOGE(TAG_IPCPNORMAL, "Starting Timer");
 }
 /*-----------------------------------------------------------*/
 
@@ -1053,5 +1098,23 @@ struct ipcpNormalInstance_t *pxIpcpGetData(void)
 
 portId_t xIPCPAllocatePortId(void)
 {
-    return xPidmAllocate(pxIpcManager->pxPidm);
+    // return xPidmAllocate(pxIpcManager->pxPidm);
+    return ulNumMgrAllocate(pxIpcManager->pxPidm);
+}
+
+/**
+ * @brief Enable or disable the RMT Scheduler.
+ *
+ * @param[in] xEnableState: pdTRUE if the timer must be enabled, pdFALSE otherwise.
+ */
+void vSchedulerRMTDequeue(BaseType_t xEnableState)
+{
+    if (xEnableState != pdFALSE)
+    {
+        xRMTQueueTimer.bActive = pdTRUE_UNSIGNED;
+    }
+    else
+    {
+        xRMTQueueTimer.bActive = pdFALSE_UNSIGNED;
+    }
 }

@@ -7,110 +7,117 @@
 #include "EFCP.h"
 #include "efcpStructures.h"
 #include "du.h"
+#include "rmt_ps_default.h"
 
 #include "normalIPCP.h"
-#define TAG_RMT "[RMT]"
 
-/* rmt_enqueue_policy return values */
-#define RMT_PS_ENQ_SEND 0  /* PDU can be transmitted by the RMT */
-#define RMT_PS_ENQ_SCHED 1 /* PDU enqueued and RMT needs to schedule */
-#define RMT_PS_ENQ_ERR 2   /* Error */
-#define RMT_PS_ENQ_DROP 3  /* PDU dropped due to queue full occupation */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#define TAG_RMT "[RMT]"
 
 #define stats_inc(name, n1_port, bytes) \
 	n1_port->xStats.name##Pdus++;       \
 	n1_port->xStats.name##Bytes += (unsigned int)bytes;
 
-typedef enum FLOW_STATE
-{
-	eN1_PORT_STATE_ENABLED = 0,
-	eN1_PORT_STATE_DISABLED,
-	eN1_PORT_STATE_DO_NOT_DISABLE,
-	eN1_PORT_STATE_DEALLOCATED,
-} eFlowState_t;
+	typedef enum FLOW_STATE
+	{
+		eN1_PORT_STATE_ENABLED = 0,
+		eN1_PORT_STATE_DISABLED,
+		eN1_PORT_STATE_DO_NOT_DISABLE,
+		eN1_PORT_STATE_DEALLOCATED,
+	} eFlowState_t;
 
-typedef struct xN1_PORT_STATS
-{
-	unsigned int plen; /* port len, all pdus enqueued in PS queue/s */
-	unsigned int dropPdus;
-	unsigned int errPdus;
-	unsigned int txPdus;
-	unsigned int txBytes;
-	unsigned int rxPdus;
-	unsigned int rxBytes;
-} n1PortStats_t;
+	typedef struct xN1_PORT_STATS
+	{
+		unsigned int plen; /* port len, all pdus enqueued in PS queue/s */
+		unsigned int dropPdus;
+		unsigned int errPdus;
+		unsigned int txPdus;
+		unsigned int txBytes;
+		unsigned int rxPdus;
+		unsigned int rxBytes;
+	} n1PortStats_t;
 
-typedef struct xRMT_N1_PORT
-{
+	typedef struct xRMT_ADDRESS
+	{
+		/*Address of the IPCP*/
+		address_t xAddress;
 
-	/* Is it required?
-	 spinlock_t		lock;*/
+		/*Address List Item*/
+		ListItem_t xAddressListItem;
+	} rmtAddress_t;
 
-	/*Port Id from Shim*/
-	portId_t xPortId;
+	struct rmtN1Port_t
+	{
 
-	/* Shim Instance*/
-	ipcpInstance_t *pxN1Ipcp;
+		/* Is it required?
+		 spinlock_t		lock;*/
 
-	/* State of the Port*/
-	eFlowState_t eState;
+		/*Port Id from Shim*/
+		portId_t xPortId;
 
-	/*Data Unit Pending to send*/
-	struct du_t *pxPendingDu;
+		/* Shim Instance*/
+		ipcpInstance_t *pxN1Ipcp;
 
-	/*N1 Port Statistics */
-	n1PortStats_t xStats;
+		/* State of the Port*/
+		eFlowState_t eState;
 
-	/* If the Port is Busy or not*/
-	BaseType_t uxBusy;
+		/*Data Unit Pending to send*/
+		struct du_t *pxPendingDu;
 
-	/*???*/
-	void *pvRmtPsQueues;
+		/*N1 Port Statistics */
+		n1PortStats_t xStats;
 
-} rmtN1Port_t;
+		/* If the Port is Busy or not*/
+		BaseType_t uxBusy;
 
-typedef struct xRMT_ADDRESS
-{
-	/*Address of the IPCP*/
-	address_t xAddress;
+		/*Port N1 Queue*/
+		rmtQueue_t *pxRmtPsQueues;
+	};
 
-	/*Address List Item*/
-	ListItem_t xAddressListItem;
-} rmtAddress_t;
+	typedef struct xRMT
+	{
+		/* List of Address */
+		List_t xAddresses;
 
-typedef struct xRMT
-{
-	/* List of Address */
-	List_t xAddresses;
+		/* IPCP Instances Parent*/
+		ipcpInstance_t *pxParent;
 
-	/* IPCP Instances Parent*/
-	ipcpInstance_t *pxParent;
+		/* EFCP Container associated with */
+		struct efcpContainer_t *pxEfcpc;
 
-	/* EFCP Container associated with */
-	struct efcpContainer_t *pxEfcpc;
+		/* N-1 */
+		struct rmtN1Port_t *pxN1Port;
 
-	/* N-1 */
-	rmtN1Port_t *pxN1Port;
+		struct rmt_Config_t *pxRmtCfg;
 
-	struct rmt_Config_t *pxRmtCfg;
+	} rmt_t;
 
-} rmt_t;
+	typedef struct xPORT_TABLE_ENTRY
+	{
+		struct rmtN1Port_t *pxPortN1;
 
-typedef struct xPORT_TABLE_ENTRY
-{
-	rmtN1Port_t *pxPortN1;
+	} portTableEntry_t;
 
-} portTableEntry_t;
+	pci_t *vCastPointerTo_pci_t(void *pvArgument);
+	BaseType_t xRmtSend(rmt_t *pxRmtInstance, struct du_t *pxDu);
+	rmt_t *pxRmtCreate(struct efcpContainer_t *pxEfcpc);
+	BaseType_t xRmtN1PortBind(rmt_t *pxRmtInstance, portId_t xId, ipcpInstance_t *pxN1Ipcp);
+	BaseType_t xRmtSendPortId(rmt_t *pxRmtInstance,
+							  portId_t xPortId,
+							  struct du_t *pxDu);
 
-pci_t *vCastPointerTo_pci_t(void *pvArgument);
-BaseType_t xRmtSend(rmt_t *pxRmtInstance, struct du_t *pxDu);
-rmt_t *pxRmtCreate(struct efcpContainer_t *pxEfcpc);
-BaseType_t xRmtN1PortBind(rmt_t *pxRmtInstance, portId_t xId, ipcpInstance_t *pxN1Ipcp);
-BaseType_t xRmtSendPortId(rmt_t *pxRmtInstance,
-						  portId_t xPortId,
-						  struct du_t *pxDu);
+	BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portId_t xFrom);
+	BaseType_t xRmtAddressAdd(rmt_t *pxInstance, address_t xAddress);
+	void vRmtN1PortBusy(rmt_t *pxRmt, NetworkBufferDescriptor_t *pxNetworkBuffer);
 
-BaseType_t xRmtReceive(struct ipcpNormalData_t *pxData, struct du_t *pxDu, portId_t xFrom);
-BaseType_t xRmtAddressAdd(rmt_t *pxInstance, address_t xAddress);
+	BaseType_t xRmtDequeu(rmt_t *pxRmt);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMPONENTS_RMT_INCLUDE_DU_H_ */

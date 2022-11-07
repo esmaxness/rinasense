@@ -114,7 +114,7 @@ BaseType_t xRINA_bind(flowAllocateHandle_t *pxFlowRequest)
                                   pdFALSE /*xWaitAllBits*/,
                                   portMAX_DELAY);
 
-        ESP_LOGE(TAG_RINA, "Flow Bound");
+        ESP_LOGD(TAG_RINA, "Flow Bound");
         return 0;
     }
 }
@@ -140,7 +140,7 @@ static flowAllocateHandle_t *prvRINACreateFlowRequest(string_t pcNameDIF,
                                                       string_t pcRemoteApp,
                                                       struct rinaFlowSpec_t *xFlowSpec)
 {
-    ESP_LOGE(TAG_RINA, "Creating a new flow request");
+    ESP_LOGD(TAG_RINA, "Creating a new flow request");
     portId_t xPortId; /* PortId to return to the user*/
     name_t *pxDIFName, *pxLocalName, *pxRemoteName;
     struct flowSpec_t *pxFlowSpecTmp;
@@ -204,7 +204,7 @@ static flowAllocateHandle_t *prvRINACreateFlowRequest(string_t pcNameDIF,
 
         /*xPortId set to zero until the TASK fill properly.*/
         xPortId = xIPCPAllocatePortId();
-        ESP_LOGE(TAG_RINA, "Port Id: %d Allocated", xPortId);
+        ESP_LOGD(TAG_RINA, "Port Id: %d Allocated", xPortId);
 
         /*Struct Data to sent attached into the event*/
 
@@ -286,6 +286,7 @@ BaseType_t prvConnect(flowAllocateHandle_t *pxFlowAllocateRequest)
     if (xResult == 0)
     {
 
+        ESP_LOGD(TAG_RINA, "Sending Flow Allocate Request");
         vFlowAllocatorFlowRequest(pxFlowAllocateRequest->xPortId, pxFlowAllocateRequest);
 
         pxFlowAllocateRequest->usTimeout = 1U;
@@ -326,7 +327,7 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
 
     pxFlowAllocateRequest = prvRINACreateFlowRequest(pcNameDIF, pcLocalApp, pcRemoteApp, xFlowSpec);
 
-    ESP_LOGE(TAG_RINA, "Connecting to IPCP Task");
+    ESP_LOGI(TAG_RINA, "Connecting to IPCP Task");
 
     xResult = prvConnect(pxFlowAllocateRequest);
 
@@ -403,7 +404,7 @@ size_t RINA_flow_write(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
     if (uxTotalDataLength <= MAX_SDU_SIZE)
     {
         /*Check if the Flow is active*/
-        xTicksToWait = (TickType_t)0U;
+        xTicksToWait = (TickType_t)50U;
 
         /*Request a NetworkBuffer to copy data*/
 

@@ -34,7 +34,7 @@ BaseType_t xDuDestroy(struct du_t *pxDu)
 		ESP_LOGD(TAG_DTP, "Destroying du struct and releasing Buffer");
 		vReleaseNetworkBufferAndDescriptor(pxDu->pxNetworkBuffer);
 	}
-	// vPortFree(pxDu);
+	vPortFree(pxDu);
 
 	return pdTRUE;
 }
@@ -138,12 +138,11 @@ BaseType_t xDuEncap(struct du_t *pxDu, pduType_t xType)
 	/* New Size = Data Size more the PCI size defined by default. */
 	xBufferSize = pxDu->pxNetworkBuffer->xDataLength + uxPciLen;
 
-	// ESP_LOGE(TAG_DTP, "Taking Buffer to encap PDU");
-	pxNewBuffer = pxGetNetworkBufferWithDescriptor(xBufferSize, (TickType_t)0U);
+	pxNewBuffer = pxGetNetworkBufferWithDescriptor(xBufferSize, (TickType_t)250U);
 
 	if (!pxNewBuffer)
 	{
-		ESP_LOGE(TAG_DTP, " Buffer was not allocated properly.");
+		ESP_LOGD(TAG_DTP, " Buffer was not allocated properly.");
 		return pdFALSE;
 	}
 

@@ -16,12 +16,6 @@
 
 #define IS_PORT_ID_OK(id) (id >= 0 ? pdTRUE : pdFALSE)
 
-typedef struct xQUEUE_FIFO
-{
-    QueueHandle_t xQueue;
-
-} rfifo_t;
-
 typedef enum RINA_EVENTS
 {
     eNoEvent = -1,
@@ -40,6 +34,7 @@ typedef enum RINA_EVENTS
     eStackAppRegistrationEvent, /* 12: The Software stack IPCP has received a AppRegistration Event*/
     eShimAppRegisteredEvent,    /* 13: The Normal IPCP has been registered into the Shim*/
     eSendMgmtEvent,             /* 14: Send Mgmt PDU */
+    eRMTQUEUETimerEvent,        /* 15: The RMT queue timer expired. */
 
 } eRINAEvent_t;
 

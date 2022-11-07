@@ -786,46 +786,46 @@ xRibdConnectToIpcp(struct ipcpNormalData_t *pxIpcpData, name_t *pxSource, name_t
     /* pxMessageDecode = prvRibdDecodeCDAP(pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength);
      vRibdPrintCdapMessage( pxMessageDecode );*/
 
-    vRibdSentCdapMsg(pxNetworkBuffer, xN1flowPortId);
+    // vRibdSentCdapMsg(pxNetworkBuffer, xN1flowPortId);
 
     return pdTRUE;
 }
 
 void vRibdPrintCdapMessage(messageCdap_t *pxDecodeCdap)
 {
-    ESP_LOGE(TAG_RIB, "DECODE");
-    ESP_LOGE(TAG_RIB, "opCode: %s", opcodeNamesTable[pxDecodeCdap->eOpCode]);
-    ESP_LOGE(TAG_RIB, "Invoke Id: %d ", pxDecodeCdap->invokeID);
-    ESP_LOGE(TAG_RIB, "Version: %lld", pxDecodeCdap->version);
+    ESP_LOGD(TAG_RIB, "DECODE");
+    ESP_LOGD(TAG_RIB, "opCode: %s", opcodeNamesTable[pxDecodeCdap->eOpCode]);
+    ESP_LOGD(TAG_RIB, "Invoke Id: %d ", pxDecodeCdap->invokeID);
+    ESP_LOGD(TAG_RIB, "Version: %lld", pxDecodeCdap->version);
     if (pxDecodeCdap->pxAuthPolicy->pcName != NULL)
     {
-        ESP_LOGE(TAG_RIB, "AuthPolicy Name: %s", pxDecodeCdap->pxAuthPolicy->pcName);
-        ESP_LOGE(TAG_RIB, "AuthPolicy Version: %s", pxDecodeCdap->pxAuthPolicy->pcVersion);
+        ESP_LOGD(TAG_RIB, "AuthPolicy Name: %s", pxDecodeCdap->pxAuthPolicy->pcName);
+        ESP_LOGD(TAG_RIB, "AuthPolicy Version: %s", pxDecodeCdap->pxAuthPolicy->pcVersion);
     }
 
-    ESP_LOGE(TAG_RIB, "Source AEI: %s", pxDecodeCdap->pxSourceInfo->pcEntityInstance);
-    ESP_LOGE(TAG_RIB, "Source AEN: %s", pxDecodeCdap->pxSourceInfo->pcEntityName);
-    ESP_LOGE(TAG_RIB, "Source API: %s", pxDecodeCdap->pxSourceInfo->pcProcessInstance);
-    ESP_LOGE(TAG_RIB, "Source APN: %s", pxDecodeCdap->pxSourceInfo->pcProcessName);
-    ESP_LOGE(TAG_RIB, "Dest AEI: %s", pxDecodeCdap->pxDestinationInfo->pcEntityInstance);
-    ESP_LOGE(TAG_RIB, "Dest AEN: %s", pxDecodeCdap->pxDestinationInfo->pcEntityName);
-    ESP_LOGE(TAG_RIB, "Dest API: %s", pxDecodeCdap->pxDestinationInfo->pcProcessInstance);
-    ESP_LOGE(TAG_RIB, "Dest APN: %s", pxDecodeCdap->pxDestinationInfo->pcProcessName);
-    ESP_LOGE(TAG_RIB, "Result: %d", pxDecodeCdap->result);
+    ESP_LOGD(TAG_RIB, "Source AEI: %s", pxDecodeCdap->pxSourceInfo->pcEntityInstance);
+    ESP_LOGD(TAG_RIB, "Source AEN: %s", pxDecodeCdap->pxSourceInfo->pcEntityName);
+    ESP_LOGD(TAG_RIB, "Source API: %s", pxDecodeCdap->pxSourceInfo->pcProcessInstance);
+    ESP_LOGD(TAG_RIB, "Source APN: %s", pxDecodeCdap->pxSourceInfo->pcProcessName);
+    ESP_LOGD(TAG_RIB, "Dest AEI: %s", pxDecodeCdap->pxDestinationInfo->pcEntityInstance);
+    ESP_LOGD(TAG_RIB, "Dest AEN: %s", pxDecodeCdap->pxDestinationInfo->pcEntityName);
+    ESP_LOGD(TAG_RIB, "Dest API: %s", pxDecodeCdap->pxDestinationInfo->pcProcessInstance);
+    ESP_LOGD(TAG_RIB, "Dest APN: %s", pxDecodeCdap->pxDestinationInfo->pcProcessName);
+    ESP_LOGD(TAG_RIB, "Result: %d", pxDecodeCdap->result);
 
     // configASSERT(pxDecodeCdap->xObjName == NULL);
 
     if (pxDecodeCdap->pcObjName)
     {
-        ESP_LOGE(TAG_RIB, "ObjectName:%s", pxDecodeCdap->pcObjName);
+        ESP_LOGD(TAG_RIB, "ObjectName:%s", pxDecodeCdap->pcObjName);
     }
     if (!pxDecodeCdap->objInst)
     {
-        ESP_LOGE(TAG_RIB, "ObjectInstance:%d", (int)pxDecodeCdap->objInst);
+        ESP_LOGD(TAG_RIB, "ObjectInstance:%d", (int)pxDecodeCdap->objInst);
     }
     if (!pxDecodeCdap->pcObjClass)
     {
-        ESP_LOGE(TAG_RIB, "ObjectClass:%s", pxDecodeCdap->pcObjClass);
+        ESP_LOGD(TAG_RIB, "ObjectClass:%s", pxDecodeCdap->pcObjClass);
     }
 }
 

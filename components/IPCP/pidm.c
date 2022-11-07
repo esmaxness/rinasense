@@ -16,6 +16,8 @@
 #define BITS_PER_BYTE (8)
 #define MAX_PORT_ID (((2 << BITS_PER_BYTE) * sizeof(portId_t)) - 1)
 
+static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
 /** @brief pxPidmCreate.
  * Create the instance of Port Id manager. This instance is register in the
  * IpcManager. Initialize the list of allocated Ports.*/
@@ -71,24 +73,35 @@ BaseType_t xPidmAllocated(pidm_t *pxInstance, portId_t xPortId)
         pos = pvPortMalloc(sizeof(*pos));
 
         /* Find a way to iterate in the list and compare the addesss*/
-
-        pxListEnd = listGET_END_MARKER(&pxInstance->xAllocatedPorts);
-        pxListItem = listGET_HEAD_ENTRY(&pxInstance->xAllocatedPorts);
+        vTaskSuspendAll();
+        taskENTER_CRITICAL(&mux);
+        {
+                pxListEnd = listGET_END_MARKER(&pxInstance->xAllocatedPorts);
+                pxListItem = listGET_HEAD_ENTRY(&pxInstance->xAllocatedPorts);
+        }
+        taskEXIT_CRITICAL(&mux);
+        (void)xTaskResumeAll();
 
         while (pxListItem != pxListEnd)
         {
-
-                pos = (allocPid_t *)listGET_LIST_ITEM_OWNER(pxListItem);
-
-                if (pos->xPid == xPortId)
+                vTaskSuspendAll();
+                taskENTER_CRITICAL(&mux);
                 {
-                        ESP_LOGD(TAG_IPCPMANAGER, "Port ID %p, #: %d", pos, pos->xPid);
-                        vPortFree(pos);
+                        pos = (allocPid_t *)listGET_LIST_ITEM_OWNER(pxListItem);
+                        // taskEXIT_CRITICAL(&mux);
 
-                        return pdTRUE;
+                        if (pos->xPid == xPortId)
+                        {
+                                ESP_LOGD(TAG_IPCPMANAGER, "Port ID %p, #: %d", pos, pos->xPid);
+                                vPortFree(pos);
+
+                                return pdTRUE;
+                        }
+                        // taskENTER_CRITICAL(&mux);
+                        pxListItem = listGET_NEXT(pxListItem);
                 }
-
-                pxListItem = listGET_NEXT(pxListItem);
+                taskEXIT_CRITICAL(&mux);
+                (void)xTaskResumeAll();
         }
         vPortFree(pos);
         return pdFALSE;
@@ -138,9 +151,17 @@ portId_t xPidmAllocate(pidm_t *pxInstance)
                 return port_id_bad();
         }
         pxNewPortId->xPid = pid;
-        vListInitialiseItem(&(pxNewPortId->xPortIdItem));
-        listSET_LIST_ITEM_OWNER(&(pxNewPortId->xPortIdItem), (void *)pxNewPortId);
-        vListInsert(&(pxInstance->xAllocatedPorts), &(pxNewPortId->xPortIdItem));
+
+        vTaskSuspendAll();
+        taskENTER_CRITICAL(&mux);
+        {
+
+                vListInitialiseItem(&(pxNewPortId->xPortIdItem));
+                listSET_LIST_ITEM_OWNER(&(pxNewPortId->xPortIdItem), (void *)pxNewPortId);
+                vListInsert(&(pxInstance->xAllocatedPorts), &(pxNewPortId->xPortIdItem));
+        }
+        taskEXIT_CRITICAL(&mux);
+        (void)xTaskResumeAll();
 
         pxInstance->xLastAllocated = pid;
 

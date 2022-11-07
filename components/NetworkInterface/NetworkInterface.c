@@ -257,16 +257,16 @@ BaseType_t xNetworkInterfaceOutput(NetworkBufferDescriptor_t *const pxNetworkBuf
 
 		if (ret != ESP_OK)
 		{
-			// ESP_LOGE(TAG_WIFI, "Failed to tx buffer %p, len %d, err %d", pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, ret);
+			ESP_LOGE(TAG_WIFI, "Failed to tx buffer %p, len %d, err %d", pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, ret);
 			//  heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
-			heap_caps_get_minimum_free_size(MALLOC_CAP_DMA);
-			ESP_LOGE(TAG_WIFI, "# Packet Sended: %d", counting); //
+			// heap_caps_get_minimum_free_size(MALLOC_CAP_DMA);
+			// ESP_LOGE(TAG_WIFI, "# Packet Sended: %d", counting);
 		}
 		else
 		{
-			ESP_LOGD(TAG_WIFI, "Sended"); //
-			// ESP_LOGE(TAG_WIFI, "Transfer #%d to buffer %p, len %d, err %d", counting, pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, ret);
-			counting++;
+			ESP_LOGD(TAG_WIFI, "Packet Sended");
+			//    ESP_LOGE(TAG_WIFI, "Transfer #%d to buffer %p, len %d, err %d", counting, pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength, ret);
+			//  counting++;
 		}
 	}
 

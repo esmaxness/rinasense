@@ -14,6 +14,7 @@
 #include "freertos/task.h"
 
 #include "IPCP.h"
+#include "rfifo.h"
 
 #include "ARP826.h"
 #include "du.h"

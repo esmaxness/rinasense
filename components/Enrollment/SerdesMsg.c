@@ -424,38 +424,38 @@ static flow_t *prvSerdesMsgDecodeFlow(rina_messages_Flow message)
 }
 void prvPrintDecodeFlow(rina_messages_Flow message)
 {
-    ESP_LOGD(TAG_RIB, "--------Flow Message--------");
+    ESP_LOGE(TAG_RIB, "--------Flow Message--------");
 
     if (message.has_destinationAddress)
-        ESP_LOGD(TAG_RIB, "Destination Address:%lld", message.destinationAddress);
+        ESP_LOGE(TAG_RIB, "Destination Address:%lld", message.destinationAddress);
 
-    ESP_LOGD(TAG_RIB, "Destination PN:%s", message.destinationNamingInfo.applicationProcessName);
+    ESP_LOGE(TAG_RIB, "Destination PN:%s", message.destinationNamingInfo.applicationProcessName);
     if (message.destinationNamingInfo.has_applicationEntityName)
-        ESP_LOGD(TAG_RIB, "Destination EN:%s", message.destinationNamingInfo.applicationEntityName);
+        ESP_LOGE(TAG_RIB, "Destination EN:%s", message.destinationNamingInfo.applicationEntityName);
     if (message.destinationNamingInfo.has_applicationEntityInstance)
-        ESP_LOGD(TAG_RIB, "Destination EI:%s", message.destinationNamingInfo.applicationEntityInstance);
+        ESP_LOGE(TAG_RIB, "Destination EI:%s", message.destinationNamingInfo.applicationEntityInstance);
     if (message.destinationNamingInfo.has_applicationProcessInstance)
-        ESP_LOGD(TAG_RIB, "Destination PI:%s", message.destinationNamingInfo.applicationProcessInstance);
+        ESP_LOGE(TAG_RIB, "Destination PI:%s", message.destinationNamingInfo.applicationProcessInstance);
     if (message.has_destinationPortId)
-        ESP_LOGD(TAG_RIB, "Destination PortId:%lld", message.destinationPortId);
+        ESP_LOGE(TAG_RIB, "Destination PortId:%lld", message.destinationPortId);
 
-    ESP_LOGD(TAG_RIB, "Source Address:%lld", message.sourceAddress);
-    ESP_LOGD(TAG_RIB, "Source PN:%s", message.sourceNamingInfo.applicationProcessName);
+    ESP_LOGE(TAG_RIB, "Source Address:%lld", message.sourceAddress);
+    ESP_LOGE(TAG_RIB, "Source PN:%s", message.sourceNamingInfo.applicationProcessName);
     if (message.sourceNamingInfo.has_applicationEntityName)
-        ESP_LOGD(TAG_RIB, "Source EN:%s", message.sourceNamingInfo.applicationEntityName);
+        ESP_LOGE(TAG_RIB, "Source EN:%s", message.sourceNamingInfo.applicationEntityName);
     if (message.sourceNamingInfo.has_applicationEntityInstance)
-        ESP_LOGD(TAG_RIB, "Source EI:%s", message.sourceNamingInfo.applicationEntityInstance);
+        ESP_LOGE(TAG_RIB, "Source EI:%s", message.sourceNamingInfo.applicationEntityInstance);
     if (message.sourceNamingInfo.has_applicationProcessInstance)
-        ESP_LOGD(TAG_RIB, "Source PI:%s", message.sourceNamingInfo.applicationProcessInstance);
+        ESP_LOGE(TAG_RIB, "Source PI:%s", message.sourceNamingInfo.applicationProcessInstance);
 
-    ESP_LOGD(TAG_RIB, "Source PortId:%lld", message.sourcePortId);
+    ESP_LOGE(TAG_RIB, "Source PortId:%lld", message.sourcePortId);
 
     if (message.connectionIds->has_destinationCEPId)
-        ESP_LOGD(TAG_RIB, "Connection Dest Cep Id:%d", (int)message.connectionIds->destinationCEPId);
+        ESP_LOGE(TAG_RIB, "Connection Dest Cep Id:%d", (int)message.connectionIds->destinationCEPId);
     if (message.connectionIds->has_sourceCEPId)
-        ESP_LOGD(TAG_RIB, "Connection Src Cep Id:%d", (int)message.connectionIds->sourceCEPId);
+        ESP_LOGE(TAG_RIB, "Connection Src Cep Id:%d", (int)message.connectionIds->sourceCEPId);
     if (message.connectionIds->has_qosId)
-        ESP_LOGD(TAG_RIB, "Connection QoS Id:%d", (int)message.connectionIds->qosId);
+        ESP_LOGE(TAG_RIB, "Connection QoS Id:%d", (int)message.connectionIds->qosId);
 }
 
 flow_t *pxSerdesMsgDecodeFlow(uint8_t *pucBuffer, size_t xMessageLength)
