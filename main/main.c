@@ -47,7 +47,7 @@ void app_main(void)
 	if (xAppPortId != -1)
 	{
 
-		while (i < 100)
+		while (pdTRUE)
 		{
 
 			if (dht_read_float_data(DHT_TYPE_AM2301, GPIO_NUM_4,
@@ -56,9 +56,9 @@ void app_main(void)
 
 				ESP_LOGE(TAG_APP, "Error to read dht");
 			}
-			ESP_LOGI(TAG_APP, "Temperature: %.1f C", Temperature);
-			ESP_LOGI(TAG_APP, "Humidity: %.1f%% ", Humidity);
-			sprintf(json, "sensorId: STH1, Temperature: %.1f C, Humidity: %.1f%% \n",
+			ESP_LOGI(TAG_APP, "Temperature: %.1f", Temperature);
+			ESP_LOGI(TAG_APP, "Humidity: %.1f ", Humidity);
+			sprintf(json, "%.1f,%.1f \n",
 					Temperature,
 					Humidity);
 
@@ -67,7 +67,7 @@ void app_main(void)
 				ESP_LOGI(TAG_APP, "Sent Data successfully");
 			}
 
-			vTaskDelay(1000000 / portTICK_RATE_MS);
+			vTaskDelay(150000 / portTICK_RATE_MS);
 
 			i = i + 1;
 		}

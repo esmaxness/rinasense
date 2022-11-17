@@ -310,7 +310,8 @@ static void prvIPCPTask(void *pvParameters)
 
             break;
         case eFATimerEvent:
-            ESP_LOGD(TAG_IPCPMANAGER, "Setting FA timer to expired");
+            ESP_LOGD(TAG_IPCPMANAGER, "Running a timer to wait until the destination app response");
+            // prvIPCPTimerReload((&xRMTQueueTimer), (TickType_t)50U);
             vIpcpSetFATimerExpiredState(pdTRUE);
 
             break;
@@ -816,6 +817,13 @@ static TickType_t prvCalculateSleepTime(void)
             xMaximumSleepTime = xRMTQueueTimer.ulRemainingTime;
         }
     }
+    if (xFATimer.bActive != pdFALSE_UNSIGNED)
+    {
+        if (xFATimer.ulRemainingTime < xMaximumSleepTime)
+        {
+            xMaximumSleepTime = xFATimer.ulRemainingTime;
+        }
+    }
 
     return xMaximumSleepTime;
 }
@@ -846,6 +854,11 @@ static void prvCheckNetworkTimers(void)
 
             xRMTQueueTimer.bActive = pdFALSE_UNSIGNED;
         }
+    }
+    if (prvIPCPTimerCheck(&xFATimer) != pdFALSE)
+    {
+        /* If FA timer is over, it must try to send the FA request again */
+        esp_restart();
     }
 }
 

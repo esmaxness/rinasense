@@ -19,7 +19,7 @@
 
 /*********** NORMAL CONFIGURATION ****************/
 
-#define NORMAL_PROCESS_NAME "edge1.mobile" //"st2.slice1" // "ue1.mobile"
+#define NORMAL_PROCESS_NAME "ue2.mobile" //"st2.slice1" // "ue1.mobile"
 #define NORMAL_PROCESS_INSTANCE "1"
 #define NORMAL_ENTITY_NAME ""
 #define NORMAL_ENTITY_INSTANCE ""
@@ -28,9 +28,9 @@
 
 /*********** NORMAL IPCP CONFIGURATION ****************/
 /**** Known IPCProcess Address *****/
-#define LOCAL_ADDRESS (1)
+#define LOCAL_ADDRESS (2)
 #define LOCAL_ADDRESS_AP_INSTANCE "1"
-#define LOCAL_ADDRESS_AP_NAME "edge1.mobile" //"st2.slice1" //"ue1.mobile" //"st1.slice1"
+#define LOCAL_ADDRESS_AP_NAME "ue2.mobile" //"st2.slice1" //"ue1.mobile" //"st1.slice1"
 
 #define REMOTE_ADDRESS (3) // 11
 #define REMOTE_ADDRESS_AP_INSTANCE "1"

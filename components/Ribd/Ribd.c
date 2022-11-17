@@ -786,7 +786,7 @@ xRibdConnectToIpcp(struct ipcpNormalData_t *pxIpcpData, name_t *pxSource, name_t
     /* pxMessageDecode = prvRibdDecodeCDAP(pxNetworkBuffer->pucEthernetBuffer, pxNetworkBuffer->xDataLength);
      vRibdPrintCdapMessage( pxMessageDecode );*/
 
-    // vRibdSentCdapMsg(pxNetworkBuffer, xN1flowPortId);
+    vRibdSentCdapMsg(pxNetworkBuffer, xN1flowPortId);
 
     return pdTRUE;
 }
@@ -839,13 +839,12 @@ BaseType_t xRibdProcessLayerManagementPDU(struct ipcpNormalData_t *pxData, portI
     /*Decode CDAP Message*/
     pxDecodeCdap = prvRibdDecodeCDAP(pxDu->pxNetworkBuffer->pucDataBuffer, pxDu->pxNetworkBuffer->xDataLength);
 
-    vRibdPrintCdapMessage(pxDecodeCdap);
-
     if (!pxDecodeCdap)
     {
         ESP_LOGE(TAG_RINA, "Error decoding CDAP message");
         return pdFALSE;
     }
+    vRibdPrintCdapMessage(pxDecodeCdap);
 
     /* Destroying the PDU it is not longer required */
     ESP_LOGD(TAG_RIB, "Destroying the PDU that is no longer used");
