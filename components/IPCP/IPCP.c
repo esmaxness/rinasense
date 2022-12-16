@@ -311,8 +311,8 @@ static void prvIPCPTask(void *pvParameters)
             break;
         case eFATimerEvent:
             ESP_LOGD(TAG_IPCPMANAGER, "Running a timer to wait until the destination app response");
-            // prvIPCPTimerReload((&xRMTQueueTimer), (TickType_t)50U);
-            vIpcpSetFATimerExpiredState(pdTRUE);
+            prvIPCPTimerReload((&xFATimer), (TickType_t)1000U);
+            // vIpcpSetFATimerExpiredState(pdTRUE);
 
             break;
 
@@ -330,17 +330,19 @@ static void prvIPCPTask(void *pvParameters)
         case eFlowBindEvent:
 
             pxFlowAllocateRequest = ((flowAllocateHandle_t *)xReceivedEvent.pvData);
-
             (void)xNormalFlowPrebind(pxIpcpData, pxFlowAllocateRequest);
-
             pxFlowAllocateRequest->xEventBits |= (EventBits_t)eFLOW_BOUND;
-
             vRINA_WeakUpUser(pxFlowAllocateRequest);
 
             break;
 
         case eSendMgmtEvent:
 
+            break;
+
+        case eFlowAllocatedEvent:
+            ESP_LOGE(TAG_IPCPMANAGER, "A Flow has been allocated, diseable FATimer");
+            xFATimer.bActive = pdFALSE_UNSIGNED;
             break;
 
         case eStackTxEvent:
@@ -857,7 +859,9 @@ static void prvCheckNetworkTimers(void)
     }
     if (prvIPCPTimerCheck(&xFATimer) != pdFALSE)
     {
-        /* If FA timer is over, it must try to send the FA request again */
+        /* If FA timer is over, it must try to send the FA request again or notify to the APP
+        it depends on the policy */
+        ESP_LOGE(TAG_IPCPMANAGER, "Flow Allocator Timer is over");
         esp_restart();
     }
 }

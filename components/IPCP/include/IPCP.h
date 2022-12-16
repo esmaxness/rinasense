@@ -26,15 +26,16 @@ typedef enum RINA_EVENTS
     eARPTimerEvent,             /* 4: The ARP timer expired. */
     eStackTxEvent,              /* 5: The software stack IPCP has queued a packet to transmit. */
     eFATimerEvent,              /* 6: See if any IPCP socket needs attention. */
-    eFlowBindEvent,             /* 7: Client API request to bind a flow. */
-    eFlowDeallocateEvent,       /* 8: A flow must be deallocated */
-    eStackRxEvent,              /* 9: The stack IPCP has queued a packet to received */
-    eShimFlowAllocatedEvent,    /* 10: A flow has been allocated on the shimWiFi*/
-    eStackFlowAllocateEvent,    /* 11: The Software stack IPCP has received a Flow allocate request. */
-    eStackAppRegistrationEvent, /* 12: The Software stack IPCP has received a AppRegistration Event*/
-    eShimAppRegisteredEvent,    /* 13: The Normal IPCP has been registered into the Shim*/
-    eSendMgmtEvent,             /* 14: Send Mgmt PDU */
-    eRMTQUEUETimerEvent,        /* 15: The RMT queue timer expired. */
+    eFlowAllocatedEvent,        /* 7: A flow has been allocated. */
+    eFlowBindEvent,             /* 9: Client API request to bind a flow. */
+    eFlowDeallocateEvent,       /* 9: A flow must be deallocated */
+    eStackRxEvent,              /* 10: The stack IPCP has queued a packet to received */
+    eShimFlowAllocatedEvent,    /* 11: A flow has been allocated on the shimWiFi*/
+    eStackFlowAllocateEvent,    /* 12: The Software stack IPCP has received a Flow allocate request. */
+    eStackAppRegistrationEvent, /* 13: The Software stack IPCP has received a AppRegistration Event*/
+    eShimAppRegisteredEvent,    /* 14: The Normal IPCP has been registered into the Shim*/
+    eSendMgmtEvent,             /* 15: Send Mgmt PDU */
+    eRMTQUEUETimerEvent,        /* 16: The RMT queue timer expired. */
 
 } eRINAEvent_t;
 

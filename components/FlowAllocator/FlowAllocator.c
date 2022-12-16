@@ -316,6 +316,8 @@ BaseType_t xFlowAllocatorHandleCreateR(serObjectValue_t *pxSerObjValue, int resu
     portId_t xAppPortId;
     flowAllocatorInstance_t *pxFAI;
 
+    RINAStackEvent_t xFlowAllocateEvent = {eFlowAllocatedEvent, NULL}; // send the
+
     flow_t *pxFlow;
 
     if (pxSerObjValue == NULL)
@@ -371,6 +373,10 @@ BaseType_t xFlowAllocatorHandleCreateR(serObjectValue_t *pxSerObjValue, int resu
     {
         (void)xEventGroupSetBits(pxFAI->pxFlowAllocatorHandle->xEventGroup, (EventBits_t)eFLOW_ACCEPT);
     }
+    if (xSendEventToIPCPTask(eFlowAllocatedEvent) != pdPASS)
+    {
+        return pdFALSE;
+    }
 
     return pdTRUE;
 }
@@ -380,6 +386,7 @@ xFlowAllocatorHandleDeleteR(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
     ESP_LOGD(TAG_FA, "HANDLE DELETE");
+    esp_restart();
 
     // Delete connection
     // delete EFCP instance
@@ -394,6 +401,7 @@ xFlowAllocatorHandleDelete(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
     ESP_LOGD(TAG_FA, "HANDLE DELETE");
+    esp_restart();
 
     // Delete connection
     // delete EFCP instance

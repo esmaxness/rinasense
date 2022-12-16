@@ -41,7 +41,7 @@ void app_main(void)
 
 	ESP_LOGI(TAG_APP, "----------- Requesting a Flow ----- ");
 
-	xAppPortId = RINA_flow_alloc("mobile.DIF", "STH2", "sensor2", xFlowSpec, Flags);
+	xAppPortId = RINA_flow_alloc("slice1.DIF", "STH4", "sensor1", xFlowSpec, Flags);
 
 	ESP_LOGI(TAG_APP, "Flow Port id: %d ", xAppPortId);
 	if (xAppPortId != -1)
@@ -67,7 +67,7 @@ void app_main(void)
 				ESP_LOGI(TAG_APP, "Sent Data successfully");
 			}
 
-			vTaskDelay(150000 / portTICK_RATE_MS);
+			vTaskDelay(1000 / portTICK_RATE_MS);
 
 			i = i + 1;
 		}
