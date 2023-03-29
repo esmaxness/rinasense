@@ -133,11 +133,21 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# Example Configuration
+# Sensor Configuration
+#
+
+#
+# test
 #
 CONFIG_ESP_WIFI_SSID="myssid"
 CONFIG_ESP_WIFI_PASSWORD="mypassword"
-# end of Example Configuration
+CONFIG_SHIM_PROCESS_NAME="wlan0"
+CONFIG_SHIM_PROCESS_INSTANCE="1"
+CONFIG_SHIM_ENTITY_NAME=""
+CONFIG_SHIM_ENTITY_INSTANCE=""
+CONFIG_NORMAL_PROCESS_NAME="st1"
+CONFIG_NORMAL_PROCESS_INSTANCE="1"
+# end of Sensor Configuration
 
 #
 # Compiler options

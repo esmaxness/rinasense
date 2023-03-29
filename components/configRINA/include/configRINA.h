@@ -14,8 +14,8 @@
 #define SHIM_INTERFACE "ESP_WIFI_MODE_STA"
 
 /************ SHIM DIF CONFIGURATION **************/
-#define ESP_WIFI_SSID "WiFiTerminet1" //"irati"     //"WiFiTerminet"     // //"WS02"
-#define ESP_WIFI_PASS "20TrmnT22"     //"irati2017"//"20TrmnT22"    //"Esdla2025"
+#define ESP_WIFI_SSID "WiFiTerminet" //"irati"     //"WiFiTerminet"     // //"WS02"
+#define ESP_WIFI_PASS "20TrmnT22"    //"irati2017"//"20TrmnT22"    //"Esdla2025"
 
 /*********** NORMAL CONFIGURATION ****************/
 

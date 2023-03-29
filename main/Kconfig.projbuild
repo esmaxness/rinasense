@@ -1,14 +1,64 @@
 # put here your custom config value
-menu "Example Configuration"
+menu "Sensor Configuration"
+    
 config ESP_WIFI_SSID
-    string "WiFi SSID"
-    default "myssid"
+    string "WiFiSSID"
     help
-	SSID (network name) for the example to connect to.
+	SSID (network name) to connect to IoT gateway.
 
 config ESP_WIFI_PASSWORD
-    string "WiFi Password"
-    default "mypassword"
+    string "WiFiPassword"
     help
-	WiFi password (WPA or WPA2) for the example to use.
+	WiFi password (WPA or WPA2).
+
+config SHIM_PROCESS_NAME
+    string "shim_PN"
+    default "wlan0"
+    help
+	Shim process Name for the Shim IPCP.
+
+config SHIM_PROCESS_INSTANCE
+    string "shim_PI"
+    default "1"
+    help
+	Shim process Instance for the Shim IPCP.
+
+config SHIM_ENTITY_NAME
+    string "shim_EN"
+    default ""
+    help
+	Shim entity name for the Shim IPCP.
+
+config SHIM_ENTITY_INSTANCE
+    string "shim_EI"
+    default ""
+    help
+	Shim entity instance for the Shim IPCP.
+
+config NORMAL_PROCESS_NAME
+    string "normal_PN"
+    default "st1"
+    help
+	Shim process Name for the Shim IPCP.
+
+config NORMAL_PROCESS_INSTANCE
+    string "shim_PI"
+    default "1"
+    help
+	Shim process Instance for the Shim IPCP.
+
+config SHIM_ENTITY_NAME
+    string "shim_EN"
+    default ""
+    help
+	Shim entity name for the Shim IPCP.
+
+config SHIM_ENTITY_INSTANCE
+    string "shim_EI"
+    default ""
+    help
+	Shim entity instance for the Shim IPCP.
+
 endmenu
+
+
