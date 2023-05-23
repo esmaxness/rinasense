@@ -9,32 +9,32 @@
 #define SHIM_ENTITY_NAME ""
 #define SHIM_ENTITY_INSTANCE ""
 
-#define SHIM_DIF_NAME "WiFiTerminet" //"Irati"
+#define SHIM_DIF_NAME "Irati" //"Irati"
 
 #define SHIM_INTERFACE "ESP_WIFI_MODE_STA"
 
 /************ SHIM DIF CONFIGURATION **************/
-#define ESP_WIFI_SSID "WiFiTerminet" //"irati"     //"WiFiTerminet"     // //"WS02"
-#define ESP_WIFI_PASS "20TrmnT22"    //"irati2017"//"20TrmnT22"    //"Esdla2025"
+#define ESP_WIFI_SSID "irati"     //"irati"     //"WiFiTerminet"     // //"WS02"
+#define ESP_WIFI_PASS "irati2017" //"irati2017"//"20TrmnT22"    //"Esdla2025"
 
 /*********** NORMAL CONFIGURATION ****************/
 
-#define NORMAL_PROCESS_NAME "st4.slice1" //"st2.slice1" // "ue1.mobile"
+#define NORMAL_PROCESS_NAME "ue2.mobile" //"st2.slice1" // "ue1.mobile"
 #define NORMAL_PROCESS_INSTANCE "1"
 #define NORMAL_ENTITY_NAME ""
 #define NORMAL_ENTITY_INSTANCE ""
 
-#define NORMAL_DIF_NAME "slice1.DIF" //"slice1.DIF" //" mobile.DIF" //
+#define NORMAL_DIF_NAME "mobile.DIF" //"slice1.DIF" //" mobile.DIF" //
 
 /*********** NORMAL IPCP CONFIGURATION ****************/
 /**** Known IPCProcess Address *****/
-#define LOCAL_ADDRESS (4)
+#define LOCAL_ADDRESS (2)
 #define LOCAL_ADDRESS_AP_INSTANCE "1"
-#define LOCAL_ADDRESS_AP_NAME "st4.slice1" //"st2.slice1" //"ue1.mobile" //"st1.slice1"
+#define LOCAL_ADDRESS_AP_NAME "ue2.mobile" //"st2.slice1" //"ue1.mobile" //"st1.slice1"
 
-#define REMOTE_ADDRESS (11) // 11
+#define REMOTE_ADDRESS (3) // 11
 #define REMOTE_ADDRESS_AP_INSTANCE "1"
-#define REMOTE_ADDRESS_AP_NAME "gw1.slice1" // "gw1.slice1" // ar1.mobile //edge1.slice1
+#define REMOTE_ADDRESS_AP_NAME "ar1.mobile" // "gw1.slice1" // ar1.mobile //edge1.slice1
 
 /**** QoS CUBES ****/
 #define QoS_CUBE_NAME "unreliable"
