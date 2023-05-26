@@ -20,6 +20,7 @@
 #include "IpcManager.h"
 #include "RINA_API.h"
 #include "num_mgr.h"
+#include "FlowAllocator.h"
 
 #include "Enrollment.h"
 #include "esp_log.h"
@@ -333,6 +334,15 @@ static void prvIPCPTask(void *pvParameters)
             (void)xNormalFlowPrebind(pxIpcpData, pxFlowAllocateRequest);
             pxFlowAllocateRequest->xEventBits |= (EventBits_t)eFLOW_BOUND;
             vRINA_WeakUpUser(pxFlowAllocateRequest);
+
+            break;
+
+        case eStackFlowAllocateEvent:
+
+            /*Call the FlowAllocator module to ahndle the FARequest sended by the User APP*/
+            ESP_LOGE(TAG_IPCPMANAGER, "Flow Allocate event received");
+            pxFlowAllocateRequest = ((flowAllocateHandle_t *)xReceivedEvent.pvData);
+            vFlowAllocatorFlowRequest(pxFlowAllocateRequest->xPortId, pxFlowAllocateRequest);
 
             break;
 

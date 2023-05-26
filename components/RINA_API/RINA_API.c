@@ -287,7 +287,17 @@ BaseType_t prvConnect(flowAllocateHandle_t *pxFlowAllocateRequest)
     {
 
         ESP_LOGD(TAG_RINA, "Sending Flow Allocate Request");
-        vFlowAllocatorFlowRequest(pxFlowAllocateRequest->xPortId, pxFlowAllocateRequest);
+        /*This must be changed: The idea is that the main task receives the request to allocate
+        the Flow and the send it to the FlowAllocator module.*/
+        xStackFlowAllocateEvent.pvData = (void *)pxFlowAllocateRequest;
+
+        if (xSendEventStructToIPCPTask(&xStackFlowAllocateEvent, (TickType_t)portMAX_DELAY) == pdFAIL)
+        {
+            /* Failed to wake-up the RINA-task, no use to wait for it */
+            return -1;
+        }
+
+        // vFlowAllocatorFlowRequest(pxFlowAllocateRequest->xPortId, pxFlowAllocateRequest);
 
         pxFlowAllocateRequest->usTimeout = 1U;
 
@@ -295,13 +305,6 @@ BaseType_t prvConnect(flowAllocateHandle_t *pxFlowAllocateRequest)
         {
             xResult = -1;
         }
-        /*xStackFlowAllocateEvent.pvData = (void *)pxFlowAllocateRequest;
-
-        if (xSendEventStructToIPCPTask(&xStackFlowAllocateEvent, (TickType_t)0U) == pdFAIL)
-        {
-            ESP_LOGE(TAG_RINA, "IPCP Task not working properly");
-            xResult = -1;
-        }*/
     }
     return xResult;
 }
@@ -366,9 +369,13 @@ portId_t RINA_flow_alloc(string_t pcNameDIF,
                 break;
             }
 
-            (void)xEventGroupWaitBits(pxFlowAllocateRequest->xEventGroup, (EventBits_t)eFLOW_ACCEPT, pdTRUE, pdFALSE, xRemainingTime);
+            (void)xEventGroupWaitBits(pxFlowAllocateRequest->xEventGroup,
+                                      (EventBits_t)eFLOW_ACCEPT,
+                                      pdTRUE,
+                                      pdFALSE,
+                                      xRemainingTime);
         }
-        /* The IPCP-task will set the 'eFLOW_BOUND' bit when it has done its
+        /* The IPCP-task will set the 'eFLOW_ACCEPT' bit when it has done its
          * job. */
     }
 
@@ -489,7 +496,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
     const void *pvCopySource; // to copy data from networkBuffer to pvBuffer
     NetworkBufferDescriptor_t *pxNetworkBuffer;
     flowAllocateHandle_t *pxFlowHandle;
-    TickType_t xRemainingTime = (TickType_t)0;
+    TickType_t xRemainingTime = (TickType_t)10;
     BaseType_t xTimed = pdFALSE;
     TimeOut_t xTimeOut;
     int32_t lDataLength;
@@ -501,7 +508,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
     timer_delta = esp_timer_get_time();
     ESP_LOGD(TAG_RINA, "Time Called: %d", timer_delta);
 
-    // Validate if the flow is valid, if the xPortId is working status CONNECTED
+    /*Validate if the flow is valid, if the xPortId is on status CONNECTED*/
     if (RINA_flowStatus(xPortId) != 1)
     {
         ESP_LOGE(TAG_RINA, "There is not a flow allocated for that port Id");
@@ -509,21 +516,25 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
     }
     else
     {
-        // find the flow handle associated to the xPortId.
+        /*Looking for the flow handle associated to that xPortId*/
         pxFlowHandle = pxFAFindFlowHandle(xPortId);
         timer_delta = esp_timer_get_time();
         ESP_LOGD(TAG_RINA, "Time Init check packet in the list: %d", timer_delta);
 
+        /*Check if there is a packet in the list*/
+        /*Maybe this will be changed. Instead, it could use the RINA queues*/
         xPacketCount = (BaseType_t)listCURRENT_LIST_LENGTH(&(pxFlowHandle->xListWaitingPackets));
 
-        ESP_LOGD(TAG_RINA, "Numbers of packet in the queue: %d", xPacketCount);
+        ESP_LOGE(TAG_RINA, "Numbers of packet in the queue: %d", xPacketCount);
         timer_delta = esp_timer_get_time();
-        ESP_LOGD(TAG_RINA, "Time finit check packet in the list: %d", timer_delta);
+        ESP_LOGE(TAG_RINA, "Time finit check packet in the list: %d", timer_delta);
 
+        /*Listening to packets in the queue. It blocks until the RINA stack has a packet
+        The RINA stack sends a message by setting the eFLOW_RECEIVE bits*/
         while (xPacketCount == 0)
         {
             timer_delta = esp_timer_get_time();
-            ESP_LOGD(TAG_RINA, "Time init check blocking: %d", timer_delta);
+            ESP_LOGE(TAG_RINA, "Time init check blocking: %d", timer_delta);
             if (xTimed == pdFALSE)
             {
                 /* Check to see if the flow is non blocking on the first
@@ -536,7 +547,7 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
                 {
 
                     /*check for the interrupt flag. */
-                    ESP_LOGD(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
+                    ESP_LOGE(TAG_RINA, "xRemainingTime: %d", xRemainingTime);
 
                     break;
                 }
@@ -591,12 +602,15 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
 
         timer_delta = esp_timer_get_time();
         ESP_LOGD(TAG_RINA, "Time init ckeck packet: %d", timer_delta);
+
+        /*There are packets in the queue.*/
         if (xPacketCount != 0)
         {
 
             taskENTER_CRITICAL(&mux);
             {
                 /* The owner of the list item is the network buffer. */
+                /* Get the first packet, and removed from the list*/
                 pxNetworkBuffer = ((NetworkBufferDescriptor_t *)listGET_OWNER_OF_HEAD_ENTRY(&(pxFlowHandle->xListWaitingPackets)));
                 (void)uxListRemove(&(pxNetworkBuffer->xBufferListItem));
             }
@@ -607,14 +621,16 @@ int32_t RINA_flow_read(portId_t xPortId, void *pvBuffer, size_t uxTotalDataLengt
 
             // vPrintBytes((void *)pxNetworkBuffer->pucDataBuffer, lDataLength);
 
+            /*Copy the SDU into the User buffer*/
             (void)memcpy(pvBuffer, (const void *)pxNetworkBuffer->pucDataBuffer, (size_t)lDataLength);
 
             vReleaseNetworkBufferAndDescriptor(pxNetworkBuffer);
         }
 
+        /*if not packets after a whilem then return error time out*/
         else
         {
-            ESP_LOGD(TAG_RINA, "Error Timeout");
+            ESP_LOGE(TAG_RINA, "Error Timeout");
             lDataLength = -1;
         }
         timer_delta = esp_timer_get_time();

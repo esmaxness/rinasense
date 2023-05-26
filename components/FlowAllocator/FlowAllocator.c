@@ -385,8 +385,8 @@ BaseType_t
 xFlowAllocatorHandleDeleteR(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
-    ESP_LOGD(TAG_FA, "HANDLE DELETE");
-    esp_restart();
+    ESP_LOGE(TAG_FA, "HANDLE DELETE");
+    // esp_restart();
 
     // Delete connection
     // delete EFCP instance
@@ -400,8 +400,8 @@ BaseType_t
 xFlowAllocatorHandleDelete(struct ribObject_t *pxRibObject, int invoke_id)
 
 {
-    ESP_LOGD(TAG_FA, "HANDLE DELETE");
-    esp_restart();
+    ESP_LOGE(TAG_FA, "HANDLE DELETE");
+    // esp_restart();
 
     // Delete connection
     // delete EFCP instance
