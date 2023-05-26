@@ -297,8 +297,6 @@ BaseType_t prvConnect(flowAllocateHandle_t *pxFlowAllocateRequest)
             return -1;
         }
 
-        // vFlowAllocatorFlowRequest(pxFlowAllocateRequest->xPortId, pxFlowAllocateRequest);
-
         pxFlowAllocateRequest->usTimeout = 1U;
 
         if (xSendEventToIPCPTask(eFATimerEvent) != pdPASS)
