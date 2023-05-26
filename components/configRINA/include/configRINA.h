@@ -38,7 +38,7 @@
 
 /**** QoS CUBES ****/
 #define QoS_CUBE_NAME "unreliable"
-#define QoS_CUBE_ID (3)
+#define QoS_CUBE_ID (1)
 #define QoS_CUBE_PARTIAL_DELIVERY pdFALSE
 #define QoS_CUBE_ORDERED_DELIVERY pdTRUE
 

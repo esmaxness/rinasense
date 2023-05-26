@@ -290,13 +290,13 @@ typedef struct xDTP_CONFIG
 } dtpConfig_t;
 
 /* Endian related definitions. */
-//#if ( ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN )
+// #if ( ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN )
 
 /* FreeRTOS_htons / FreeRTOS_htonl: some platforms might have built-in versions
  * using a single instruction so allow these versions to be overridden. */
-//#ifndef FreeRTOS_htons
+// #ifndef FreeRTOS_htons
 #define FreeRTOS_htons(usIn) ((uint16_t)(((usIn) << 8U) | ((usIn) >> 8U)))
-//#endif
+// #endif
 
 #ifndef FreeRTOS_htonl
 #define FreeRTOS_htonl(ulIn)                                        \
@@ -307,25 +307,26 @@ typedef struct xDTP_CONFIG
                        ((((uint32_t)(ulIn))) >> 24)))
 #endif /* ifndef FreeRTOS_htonl */
 
-//#else /* ipconfigBYTE_ORDER */
+// #else /* ipconfigBYTE_ORDER */
 
-//#define FreeRTOS_htons( x )    ( ( uint16_t ) ( x ) )
-//#define FreeRTOS_htonl( x )    ( ( uint32_t ) ( x ) )
+// #define FreeRTOS_htons( x )    ( ( uint16_t ) ( x ) )
+// #define FreeRTOS_htonl( x )    ( ( uint32_t ) ( x ) )
 
-//#endif /* ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN */
+// #endif /* ipconfigBYTE_ORDER == pdFREERTOS_LITTLE_ENDIAN */
 
 #define FreeRTOS_ntohs(x) FreeRTOS_htons(x)
 #define FreeRTOS_ntohl(x) FreeRTOS_htonl(x)
 #define SOCKET_EVENT_BIT_COUNT 8
 
+/*This flows events are interchanged between the user APP and the RINA task*/
 enum eFLOW_EVENT
 {
-        eFLOW_RECEIVE = 0x0001,
-        eFLOW_SEND = 0x0002,
-        eFLOW_ACCEPT = 0x0004,
-        eFLOW_CONNECT = 0x0008,
-        eFLOW_BOUND = 0x0010,
-        eFLOW_CLOSED = 0x0020,
+        eFLOW_RECEIVE = 0x0001, /*A SDU has been received*/
+        eFLOW_SEND = 0x0002,    /*A SDU has been sended*/
+        eFLOW_ACCEPT = 0x0004,  /*Remote APP has acepted the flow*/
+        eFLOW_CONNECT = 0x0008, /*??*/
+        eFLOW_BOUND = 0x0010,   /*A new portID has been bounded*/
+        eFLOW_CLOSED = 0x0020,  /*Remote APP has deallocated the flow*/
         eSELECT_ALL = 0x000F,
 
 };
